@@ -236,8 +236,8 @@ footer a:hover { text-decoration-color: currentColor; }
 
 .hero-service-title span {
   padding: 0 0.08em 0.025em;
-  color: var(--paper);
-  background: rgba(139, 99, 45, 0.72);
+  color: var(--ink);
+  background: rgba(238, 233, 223, 0.88);
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }

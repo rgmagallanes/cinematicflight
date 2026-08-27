@@ -213,7 +213,7 @@ The palette moves between a near-black forest atmosphere and warm mineral paper,
 
 ### Hierarchy
 
-- **Hero Service Display** (600, responsive large scale): The opening service statement uses the Avenir/Futura stack in sentence case for immediate clarity. Website and cinematic experience use compact, translucent brass-ink highlight bands with mineral-paper text.
+- **Hero Service Display** (600, responsive large scale): The opening service statement uses the Avenir/Futura stack in sentence case for immediate clarity. Website and cinematic experience use compact, translucent warm-paper highlight bands with botanical-ink text.
 - **Section Display** (400, responsive large scale, 0.92 line height): Offer, proof, method, and enquiry headlines.
 - **Feature Body** (400, responsive medium scale, 1.35 line height): Short explanatory paragraphs and the commercial proposition, set in the display face for warmth.
 - **Utility Label** (600–700, compact scale, 0.16–0.22em tracking, uppercase): Navigation, actions, scene status, form labels, captions, and provenance.
