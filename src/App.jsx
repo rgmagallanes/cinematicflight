@@ -496,16 +496,16 @@ export function App() {
       </section>
 
       <section className="method-section">
-        <p>Existing website or complete rebuild.</p>
-        <h2>The journey meets the property where it is.</h2>
+        <p>No new photography required.</p>
+        <h2>You already have the material.</h2>
         <div className="method-content">
           <p className="method-note">
-            Add it as a cinematic opening to an established site, or let it lead an entirely new experience. Booking and enquiry routes remain connected.
+            The journey is built from photographs the property already has — the ones on your current website, in your brochure, in the folder from the last shoot.
           </p>
           <ol className="process-list">
-            <li><strong>Share the place</strong><span>Send the property and the photographs already available.</span></li>
-            <li><strong>Shape the sequence</strong><span>We assess whether the imagery can support a convincing journey.</span></li>
-            <li><strong>Connect the destination</strong><span>The experience can lead into the existing website or a complete rebuild.</span></li>
+            <li><strong>Send what exists</strong><span>Whatever is already published, plus anything that never made it onto the site.</span></li>
+            <li><strong>We read the material</strong><span>Whether the imagery can carry a convincing journey, answered before anything is built.</span></li>
+            <li><strong>Gaps are named</strong><span>If a view is missing, we say which one, rather than commissioning a production around it.</span></li>
           </ol>
         </div>
       </section>

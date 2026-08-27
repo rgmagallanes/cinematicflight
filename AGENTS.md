@@ -34,3 +34,6 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Keep the main hero service statement in sentence-case Avenir/Futura sans-serif for readability; reserve Bodoni Moda for the site's editorial and atmospheric display moments.
 - Use the approved transparent Cinematic Flight threshold-and-path logo in the primary navigation; preserve its warm-paper and antique-brass lockup and accessible home-link label.
 - Keep “Property websites in motion” as a quiet subtitle directly beneath the navigation logo on desktop and compact layouts.
+- State the existing-website-or-complete-rebuild choice once only, in the approved `#offer` delivery choice; the post-proof method section must not restate it.
+- Use the post-proof method section to answer the owner's first objection — whether new photography is required — rather than repeating the creation process already covered in `#offer`.
+- Keep that answer qualitative and within prototype truth: the property's existing photographs are the material, suitability is assessed before anything is built, and missing views are named rather than commissioned as a production.
