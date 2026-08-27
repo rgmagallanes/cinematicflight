@@ -33,10 +33,12 @@ function FlightHero() {
     if (!shell || !stage) return undefined;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const coarsePointer = window.matchMedia("(hover: none) and (pointer: coarse)");
+    const targetTimes = Array(clips.length).fill(null);
     let frame = 0;
 
     const loadAround = (index) => {
-      [index, index + 1].forEach((videoIndex) => {
+      [index - 1, index, index + 1].forEach((videoIndex) => {
         const video = videosRef.current[videoIndex];
         if (!video || video.preload !== "none") return;
         video.preload = "metadata";
@@ -45,12 +47,33 @@ function FlightHero() {
     };
 
     const primeCurrent = () => {
-      [activeVideoRef.current, activeVideoRef.current + 1].forEach((videoIndex) => {
-        const video = videosRef.current[videoIndex];
-        if (!video) return;
+      videosRef.current.forEach((video) => {
+        if (!video || video.preload === "none") return;
         const attempt = video.play();
         if (attempt?.then) attempt.then(() => video.pause()).catch(() => {});
       });
+    };
+
+    const commitLatestSeek = (index) => {
+      const video = videosRef.current[index];
+      const target = targetTimes[index];
+      if (
+        !video
+        || video.seeking
+        || !Number.isFinite(target)
+        || !Number.isFinite(video.duration)
+        || video.duration <= 0
+      ) return;
+
+      const clampedTarget = Math.min(video.duration - 0.025, Math.max(0, target));
+      const threshold = coarsePointer.matches ? 0.02 : 0.008;
+      if (Math.abs(video.currentTime - clampedTarget) <= threshold) return;
+
+      try {
+        video.currentTime = clampedTarget;
+      } catch {
+        // Metadata can become temporarily unavailable while the source changes.
+      }
     };
 
     const render = () => {
@@ -80,8 +103,8 @@ function FlightHero() {
       loadAround(nextActiveVideo);
 
       if (video?.duration && Number.isFinite(video.duration)) {
-        const target = Math.min(video.duration - 0.025, local * video.duration);
-        if (Math.abs(video.currentTime - target) > 0.035) video.currentTime = target;
+        targetTimes[nextActiveVideo] = local * video.duration;
+        commitLatestSeek(nextActiveVideo);
       }
 
       stage.style.setProperty("--flight-progress", progress.toFixed(4));
@@ -104,6 +127,14 @@ function FlightHero() {
       frame = requestAnimationFrame(render);
     };
 
+    const mediaListeners = videosRef.current.map((video, index) => {
+      const onSeeked = () => commitLatestSeek(index);
+      video?.addEventListener("seeked", onSeeked);
+      video?.addEventListener("loadedmetadata", requestRender);
+      video?.addEventListener("durationchange", requestRender);
+      return { video, onSeeked };
+    });
+
     loadAround(0);
     render();
     window.addEventListener("scroll", requestRender, { passive: true });
@@ -117,6 +148,11 @@ function FlightHero() {
       window.removeEventListener("resize", requestRender);
       window.removeEventListener("pointerdown", primeCurrent);
       window.removeEventListener("keydown", primeCurrent);
+      mediaListeners.forEach(({ video, onSeeked }) => {
+        video?.removeEventListener("seeked", onSeeked);
+        video?.removeEventListener("loadedmetadata", requestRender);
+        video?.removeEventListener("durationchange", requestRender);
+      });
     };
   }, []);
 
