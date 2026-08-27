@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-26T07:51:59Z",
+  "title": "Design System: Cinematic Flight",
+  "extensions": {
+    "colorMeta": {
+      "forest-night": { "role": "primary", "displayName": "Forest Night", "canonical": "#07110d", "tonalRamp": ["oklch(15% 0.020 157)", "oklch(26% 0.020 157)", "oklch(38% 0.020 157)", "oklch(50% 0.020 157)", "oklch(62% 0.020 157)", "oklch(74% 0.020 157)", "oklch(86% 0.020 157)", "oklch(95% 0.020 157)"] },
+      "forest-night-soft": { "role": "neutral", "displayName": "Forest Night Soft", "canonical": "#102019", "tonalRamp": ["oklch(15% 0.025 157)", "oklch(26% 0.025 157)", "oklch(38% 0.025 157)", "oklch(50% 0.025 157)", "oklch(62% 0.025 157)", "oklch(74% 0.025 157)", "oklch(86% 0.025 157)", "oklch(95% 0.025 157)"] },
+      "forest-close": { "role": "neutral", "displayName": "Forest Close", "canonical": "#0a1712", "tonalRamp": ["oklch(15% 0.022 157)", "oklch(26% 0.022 157)", "oklch(38% 0.022 157)", "oklch(50% 0.022 157)", "oklch(62% 0.022 157)", "oklch(74% 0.022 157)", "oklch(86% 0.022 157)", "oklch(95% 0.022 157)"] },
+      "mineral-paper": { "role": "primary", "displayName": "Mineral Paper", "canonical": "#eee9df", "tonalRamp": ["oklch(15% 0.018 83)", "oklch(26% 0.018 83)", "oklch(38% 0.018 83)", "oklch(50% 0.018 83)", "oklch(62% 0.018 83)", "oklch(74% 0.018 83)", "oklch(86% 0.018 83)", "oklch(95% 0.018 83)"] },
+      "mineral-paper-deep": { "role": "neutral", "displayName": "Mineral Paper Deep", "canonical": "#ded6c7", "tonalRamp": ["oklch(15% 0.026 77)", "oklch(26% 0.026 77)", "oklch(38% 0.026 77)", "oklch(50% 0.026 77)", "oklch(62% 0.026 77)", "oklch(74% 0.026 77)", "oklch(86% 0.026 77)", "oklch(95% 0.026 77)"] },
+      "photographic-white": { "role": "neutral", "displayName": "Photographic White", "canonical": "#f5f0e5", "tonalRamp": ["oklch(15% 0.020 85)", "oklch(26% 0.020 85)", "oklch(38% 0.020 85)", "oklch(50% 0.020 85)", "oklch(62% 0.020 85)", "oklch(74% 0.020 85)", "oklch(86% 0.020 85)", "oklch(95% 0.020 85)"] },
+      "botanical-ink": { "role": "neutral", "displayName": "Botanical Ink", "canonical": "#142019", "tonalRamp": ["oklch(15% 0.018 150)", "oklch(26% 0.018 150)", "oklch(38% 0.018 150)", "oklch(50% 0.018 150)", "oklch(62% 0.018 150)", "oklch(74% 0.018 150)", "oklch(86% 0.018 150)", "oklch(95% 0.018 150)"] },
+      "quiet-brass": { "role": "secondary", "displayName": "Quiet Brass", "canonical": "#c79749", "tonalRamp": ["oklch(15% 0.105 78)", "oklch(26% 0.105 78)", "oklch(38% 0.105 78)", "oklch(50% 0.105 78)", "oklch(62% 0.105 78)", "oklch(74% 0.105 78)", "oklch(86% 0.105 78)", "oklch(95% 0.105 78)"] },
+      "brass-ink": { "role": "secondary", "displayName": "Brass Ink", "canonical": "#8b632d", "tonalRamp": ["oklch(15% 0.090 78)", "oklch(26% 0.090 78)", "oklch(38% 0.090 78)", "oklch(50% 0.090 78)", "oklch(62% 0.090 78)", "oklch(74% 0.090 78)", "oklch(86% 0.090 78)", "oklch(95% 0.090 78)"] },
+      "warm-brass": { "role": "secondary", "displayName": "Warm Brass", "canonical": "#d6a553", "tonalRamp": ["oklch(15% 0.105 78)", "oklch(26% 0.105 78)", "oklch(38% 0.105 78)", "oklch(50% 0.105 78)", "oklch(62% 0.105 78)", "oklch(74% 0.105 78)", "oklch(86% 0.105 78)", "oklch(95% 0.105 78)"] },
+      "brass-light": { "role": "secondary", "displayName": "Brass Light", "canonical": "#f3c778", "tonalRamp": ["oklch(15% 0.104 82)", "oklch(26% 0.104 82)", "oklch(38% 0.104 82)", "oklch(50% 0.104 82)", "oklch(62% 0.104 82)", "oklch(74% 0.104 82)", "oklch(86% 0.104 82)", "oklch(95% 0.104 82)"] },
+      "signature-brass": { "role": "secondary", "displayName": "Signature Brass", "canonical": "#e9b45c", "tonalRamp": ["oklch(15% 0.110 80)", "oklch(26% 0.110 80)", "oklch(38% 0.110 80)", "oklch(50% 0.110 80)", "oklch(62% 0.110 80)", "oklch(74% 0.110 80)", "oklch(86% 0.110 80)", "oklch(95% 0.110 80)"] },
+      "caption-brass": { "role": "secondary", "displayName": "Caption Brass", "canonical": "#d0a25b", "tonalRamp": ["oklch(15% 0.090 79)", "oklch(26% 0.090 79)", "oklch(38% 0.090 79)", "oklch(50% 0.090 79)", "oklch(62% 0.090 79)", "oklch(74% 0.090 79)", "oklch(86% 0.090 79)", "oklch(95% 0.090 79)"] },
+      "muted-sage": { "role": "neutral", "displayName": "Muted Sage", "canonical": "#aab6ad", "tonalRamp": ["oklch(15% 0.018 151)", "oklch(26% 0.018 151)", "oklch(38% 0.018 151)", "oklch(50% 0.018 151)", "oklch(62% 0.018 151)", "oklch(74% 0.018 151)", "oklch(86% 0.018 151)", "oklch(95% 0.018 151)"] },
+      "muted-sage-deep": { "role": "neutral", "displayName": "Muted Sage Deep", "canonical": "#91a096", "tonalRamp": ["oklch(15% 0.021 151)", "oklch(26% 0.021 151)", "oklch(38% 0.021 151)", "oklch(50% 0.021 151)", "oklch(62% 0.021 151)", "oklch(74% 0.021 151)", "oklch(86% 0.021 151)", "oklch(95% 0.021 151)"] },
+      "contact-sage": { "role": "neutral", "displayName": "Contact Sage", "canonical": "#bec9bf", "tonalRamp": ["oklch(15% 0.017 151)", "oklch(26% 0.017 151)", "oklch(38% 0.017 151)", "oklch(50% 0.017 151)", "oklch(62% 0.017 151)", "oklch(74% 0.017 151)", "oklch(86% 0.017 151)", "oklch(95% 0.017 151)"] },
+      "cool-focus": { "role": "tertiary", "displayName": "Cool Focus", "canonical": "#8dd5e4", "tonalRamp": ["oklch(15% 0.080 211)", "oklch(26% 0.080 211)", "oklch(38% 0.080 211)", "oklch(50% 0.080 211)", "oklch(62% 0.080 211)", "oklch(74% 0.080 211)", "oklch(86% 0.080 211)", "oklch(95% 0.080 211)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Section Display", "purpose": "Large commercial and editorial headings below the flight." },
+      "display-hero": { "displayName": "Hero Display", "purpose": "The monumental two-line opening statement only." },
+      "body-feature": { "displayName": "Feature Body", "purpose": "Short propositions and explanatory paragraphs with editorial warmth." },
+      "utility": { "displayName": "Utility Label", "purpose": "Navigation, actions, status, captions, labels, and provenance." }
+      ,"utility-readable": { "displayName": "Readable Utility", "purpose": "Compact labels and recovery text that must remain legible on mobile." }
+      ,"body-small": { "displayName": "Small Body", "purpose": "Concise supporting explanation in dense proof and process rows." }
+      ,"display-small": { "displayName": "Small Display", "purpose": "Process-step titles within the editorial sequence." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "state-standard", "value": "200ms ease-out", "purpose": "Compact action hover and color transitions." },
+      { "name": "state-deliberate", "value": "220ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "The circular Enter control's restrained scale response." },
+      { "name": "proof-lift", "value": "500ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "The slow half-rem lift of proof photography." },
+      { "name": "clip-crossfade", "value": "160ms linear", "purpose": "Maintains continuity as active scroll-scrubbed clips change." }
+    ],
+    "breakpoints": [
+      { "name": "stack", "value": "900px" },
+      { "name": "compact", "value": "620px" },
+      { "name": "minimum-supported", "value": "320px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Enter Control",
+      "kind": "button",
+      "refersTo": "button-enter",
+      "description": "The circular invitation that begins the scroll-controlled property journey.",
+      "html": "<button class=\"ds-enter\" type=\"button\">Enter</button>",
+      "css": ".ds-enter { width: 7.2rem; height: 7.2rem; border: 1px solid var(--brass, #c79749); border-radius: 50%; color: #f3c778; background: rgba(4, 11, 8, 0.16); font: 700 0.68rem/1.5 \"Avenir Next\", Avenir, Futura, \"Century Gothic\", sans-serif; letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; transition: color 220ms ease-out, background 220ms ease-out, transform 220ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-enter:hover { color: #07110d; background: #d6a553; transform: scale(1.04); } .ds-enter:focus-visible { outline: 2px solid #8dd5e4; outline-offset: 4px; } .ds-enter:active { transform: scale(1); }"
+    },
+    {
+      "name": "Solid Commercial Action",
+      "kind": "button",
+      "refersTo": "button-solid",
+      "description": "The primary dark action used on mineral-paper commercial sections.",
+      "html": "<a class=\"ds-action-solid\" href=\"#\">Discuss your property</a>",
+      "css": ".ds-action-solid { display: inline-flex; min-height: 3.25rem; align-items: center; justify-content: center; padding: 0.85rem 1.35rem; border: 1px solid #142019; border-radius: 999px; color: #eee9df; background: #142019; font: 700 0.68rem/1.5 \"Avenir Next\", Avenir, Futura, \"Century Gothic\", sans-serif; letter-spacing: 0.16em; text-decoration: none; text-transform: uppercase; transition: transform 200ms ease-out; } .ds-action-solid:hover { transform: translateY(-2px); } .ds-action-solid:focus-visible { outline: 2px solid #8dd5e4; outline-offset: 4px; } .ds-action-solid:active { transform: translateY(0); }"
+    },
+    {
+      "name": "Outline Commercial Action",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "The supporting paper-section action with a botanical hairline.",
+      "html": "<a class=\"ds-action-outline\" href=\"#\">View the journey</a>",
+      "css": ".ds-action-outline { display: inline-flex; min-height: 3.25rem; align-items: center; justify-content: center; padding: 0.85rem 1.35rem; border: 1px solid #142019; border-radius: 999px; color: #142019; background: transparent; font: 700 0.68rem/1.5 \"Avenir Next\", Avenir, Futura, \"Century Gothic\", sans-serif; letter-spacing: 0.16em; text-decoration: none; text-transform: uppercase; transition: transform 200ms ease-out; } .ds-action-outline:hover { transform: translateY(-2px); } .ds-action-outline:focus-visible { outline: 2px solid #8dd5e4; outline-offset: 4px; } .ds-action-outline:active { transform: translateY(0); }"
+    },
+    {
+      "name": "Enquiry Field",
+      "kind": "input",
+      "refersTo": "input-line",
+      "description": "A transparent, square field whose single underline preserves the quiet dark close.",
+      "html": "<label class=\"ds-field\"><span>Your name</span><input type=\"text\" placeholder=\"Name\" /></label>",
+      "css": ".ds-field { display: grid; gap: 0.7rem; color: #eee9df; } .ds-field span { font: 700 0.66rem/1.5 \"Avenir Next\", Avenir, Futura, \"Century Gothic\", sans-serif; letter-spacing: 0.16em; text-transform: uppercase; } .ds-field input { min-height: 3.5rem; padding: 0.8rem 0; border: 0; border-bottom: 1px solid rgba(245, 240, 229, 0.42); border-radius: 0; color: #eee9df; background: transparent; font: 400 1rem/1.5 \"Avenir Next\", Avenir, Futura, \"Century Gothic\", sans-serif; } .ds-field input::placeholder { color: #91a096; } .ds-field input:hover { border-bottom-color: rgba(245, 240, 229, 0.7); } .ds-field input:focus-visible { border-bottom-color: #8dd5e4; outline: 2px solid #8dd5e4; outline-offset: 4px; }"
+    },
+    {
+      "name": "Flight Navigation",
+      "kind": "nav",
+      "description": "A transparent top rail that frames the photograph with quiet uppercase links.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Primary navigation\"><a class=\"ds-wordmark\" href=\"#\"><strong>Cinematic Flight</strong><small>Property websites in motion</small></a><span><a href=\"#\">Selected work</a><a href=\"#\">The offer</a><a href=\"#\">Contact</a></span></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 1.6rem clamp(1.25rem, 4vw, 4.5rem); border-bottom: 1px solid rgba(245, 240, 229, 0.16); color: #f5f0e5; background: #07110d; font: 600 0.7rem/1.5 \"Avenir Next\", Avenir, Futura, \"Century Gothic\", sans-serif; letter-spacing: 0.2em; text-transform: uppercase; } .ds-wordmark { display: grid; gap: 0.32rem; line-height: 1; } .ds-wordmark strong { font-size: 0.7rem; } .ds-wordmark small { color: rgba(245, 240, 229, 0.72); font-size: 0.56rem; font-weight: 500; letter-spacing: 0.1em; text-transform: none; } .ds-nav span { display: flex; gap: clamp(1.1rem, 3vw, 3.25rem); } .ds-nav a { color: inherit; text-decoration-color: transparent; text-underline-offset: 0.35rem; transition: text-decoration-color 180ms ease-out; } .ds-nav a:hover { text-decoration-color: currentColor; } .ds-nav a:focus-visible { outline: 2px solid #8dd5e4; outline-offset: 4px; }"
+    },
+    {
+      "name": "Seven-Node Flight Progress",
+      "kind": "custom",
+      "description": "The lower-edge orientation system for the seven-scene property journey.",
+      "html": "<div class=\"ds-progress\"><span>03 / 07</span><div class=\"ds-progress-track\"><i></i><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div></div>",
+      "css": ".ds-progress { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 1.25rem; min-width: 28rem; color: rgba(245, 240, 229, 0.88); background: #07110d; font: 600 0.64rem/1.5 \"Avenir Next\", Avenir, Futura, \"Century Gothic\", sans-serif; letter-spacing: 0.18em; text-transform: uppercase; } .ds-progress-track { position: relative; height: 1rem; display: flex; align-items: center; justify-content: space-between; } .ds-progress-track::before, .ds-progress-track i { content: \"\"; position: absolute; left: 0; top: calc(50% - 0.5px); height: 1px; } .ds-progress-track::before { width: 100%; background: rgba(245, 240, 229, 0.32); } .ds-progress-track i { z-index: 1; width: 33.333%; background: #c79749; } .ds-progress-track b { position: relative; z-index: 2; width: 0.55rem; height: 0.55rem; border: 1px solid rgba(245, 240, 229, 0.78); border-radius: 50%; background: #102019; }"
+    },
+    {
+      "name": "Proof Frame",
+      "kind": "card",
+      "description": "A borderless 4:5 property photograph with a quiet brass sequence caption.",
+      "html": "<figure class=\"ds-proof\"><div role=\"img\" aria-label=\"Property view\"></div><figcaption>01</figcaption></figure>",
+      "css": ".ds-proof { width: 15rem; margin: 0; color: #d0a25b; background: #07110d; } .ds-proof div { width: 100%; aspect-ratio: 4 / 5; background: linear-gradient(145deg, #102019, #58654d 52%, #c79749); filter: saturate(0.82); transition: filter 320ms ease-out, transform 500ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-proof figcaption { padding-top: 0.85rem; font: 400 0.64rem/1.5 \"Avenir Next\", Avenir, Futura, \"Century Gothic\", sans-serif; letter-spacing: 0.18em; } .ds-proof:hover div { filter: saturate(1); transform: translateY(-0.5rem); } .ds-proof:focus-within div { outline: 2px solid #8dd5e4; outline-offset: 4px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Entered Landscape",
+    "overview": "Cinematic Flight is an editorial property world that behaves like an arrival rather than a conventional agency page. Native-width photography occupies the full viewport first, then yields to motion only as the visitor scrolls. Monumental Bodoni Moda, forest-black exposure, thin brass signals, and quiet utility labels make the interface feel cinematic, architectural, and controlled.\n\nThe commercial story arrives on warm mineral paper after the experience has earned attention. Explanatory sections stay restrained and spacious; the dark enquiry close returns the visitor to the opening atmosphere without pretending that the prototype form is a live service.",
+    "keyCharacteristics": [
+      "Full-viewport photographic immersion before explanation.",
+      "Scroll-scrubbed motion that grows out of a sharp still-image anchor.",
+      "Monumental, tightly set Bodoni Moda paired with tracked Avenir/Futura utility text.",
+      "Forest, paper, botanical ink, and rare brass accents.",
+      "Hairline structures, wide breathing room, and deliberately sparse copy.",
+      "A warm-paper commercial handoff followed by a dark, quiet enquiry close."
+    ],
+    "rules": [
+      { "name": "The Brass Is a Signal Rule", "body": "Brass marks entry, orientation, numbering, or provenance; it does not become a broad decorative fill.", "section": "colors" },
+      { "name": "The Two Atmospheres Rule", "body": "Use forest-dark surfaces for experience and enquiry, and mineral-paper surfaces for explanation. Do not muddy either world with generic mid-gray panels.", "section": "colors" },
+      { "name": "The Two Voices Rule", "body": "Bodoni Moda expresses the property and proposition; the sans-serif stack gives instructions and metadata. Do not swap their jobs.", "section": "typography" },
+      { "name": "The Short Measure Rule", "body": "Display statements remain compact and architectural; supporting prose stays near the observed 38rem maximum instead of stretching across the viewport.", "section": "typography" },
+      { "name": "The Horizon Stays Clear Rule", "body": "The photographic hero remains full-bleed and uncluttered. Interface elements occupy disciplined edges and corners rather than becoming a central overlay card.", "section": "layout" },
+      { "name": "The Flat-by-Material Rule", "body": "Surfaces are separated by image, tone, hairline, or motion—not by generic drop shadows.", "section": "elevation" },
+      { "name": "The Reserved Curve Rule", "body": "Use circles for journey controls and pills for direct actions; do not round sections, photographs, proof frames, or fields.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do let verified property photography establish the atmosphere before service copy appears.",
+      "Do preserve the sharp native-width opening anchor and fade responsive motion in only after scroll begins.",
+      "Do keep the seven-node progress, vertical rail, and property signature as one coherent journey-orientation system.",
+      "Do use warm paper for commercial clarity and forest-dark surfaces for immersion and the enquiry close.",
+      "Do maintain visible keyboard focus, the skip link, the reduced-motion static opening, and responsive behavior down to 320px.",
+      "Do keep proof and method sections restrained enough that the property remains the evidence."
+    ],
+    "donts": [
+      "Don't replace the opening with a generic agency hero, feature-card grid, or interface panel over the photograph.",
+      "Don't use placeholder or synthetic property imagery where verified photographs exist.",
+      "Don't overuse brass, pure white, rounded cards, gradients unrelated to photographic legibility, or drop shadows.",
+      "Don't autoplay a time-based film in place of visitor-controlled scroll movement.",
+      "Don't invent pricing, testimonials, availability, booking actions, performance claims, or production form behavior.",
+      "Don't let motion become mandatory; reduced-motion visitors receive the static photographic opening."
+    ]
+  }
+}
