@@ -235,9 +235,14 @@ footer a:hover { text-decoration-color: currentColor; }
 }
 
 .hero-service-title span {
-  padding: 0 0.08em 0.025em;
-  color: var(--ink);
-  background: rgba(238, 233, 223, 0.88);
+  padding: 0 0.08em;
+  color: var(--night);
+  background: linear-gradient(
+    to bottom,
+    transparent 0.08em,
+    var(--brass) 0.08em calc(100% - 0.08em),
+    transparent calc(100% - 0.08em)
+  );
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
@@ -1028,9 +1033,9 @@ footer a:last-child { justify-self: end; }
     line-height: 0.86;
   }
   .hero-copy h1.hero-service-title {
-    max-width: 16ch;
-    font-size: clamp(2.2rem, 9.5vw, 2.65rem);
-    line-height: 1;
+    max-width: 17ch;
+    font-size: clamp(1.85rem, 8.2vw, 2.2rem);
+    line-height: 1.06;
   }
   .enter-button {
     width: 5.8rem;

@@ -29,7 +29,8 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Lead the hero pitch with “We create websites you can enter” so the business offer is explicit before the cinematic demonstration begins.
 - Use “You provide the place. We create the website and the cinematic experience.” as the supporting hero line to distinguish the client's contribution from the service delivered.
 - Promote that line to the main hero statement and highlight “website” and “cinematic experience” in restrained light brass; use “Built from real photographs of the property” as supporting copy.
-- Quiet the hero emphasis by replacing brass-colored words with warm-paper background bands behind “website” and “cinematic experience,” and reduce the overall headline scale.
+- Use the preferred local-reference treatment: quiet-brass background bands with forest-night text behind “website” and “cinematic experience.”
+- Keep the compact hero headline tighter at `clamp(1.85rem, 8.2vw, 2.2rem)` with a 1.06 line height so the mobile composition matches the preferred local version.
 - Keep the main hero service statement in sentence-case Avenir/Futura sans-serif for readability; reserve Bodoni Moda for the site's editorial and atmospheric display moments.
 - Use the approved transparent Cinematic Flight threshold-and-path logo in the primary navigation; preserve its warm-paper and antique-brass lockup and accessible home-link label.
 - Keep “Property websites in motion” as a quiet subtitle directly beneath the navigation logo on desktop and compact layouts.

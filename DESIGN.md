@@ -40,9 +40,9 @@ typography:
     letterSpacing: "-0.03em"
   display-hero-service-compact:
     fontFamily: '"Avenir Next", Avenir, Futura, "Century Gothic", sans-serif'
-    fontSize: "clamp(2.2rem, 9.5vw, 2.65rem)"
+    fontSize: "clamp(1.85rem, 8.2vw, 2.2rem)"
     fontWeight: 600
-    lineHeight: 1
+    lineHeight: 1.06
     letterSpacing: "-0.03em"
   body-feature:
     fontFamily: '"Bodoni Moda", "Iowan Old Style", Georgia, serif'
@@ -213,7 +213,7 @@ The palette moves between a near-black forest atmosphere and warm mineral paper,
 
 ### Hierarchy
 
-- **Hero Service Display** (600, responsive large scale): The opening service statement uses the Avenir/Futura stack in sentence case for immediate clarity. Website and cinematic experience use compact, translucent warm-paper highlight bands with botanical-ink text.
+- **Hero Service Display** (600, responsive large scale): The opening service statement uses the Avenir/Futura stack in sentence case for immediate clarity. Website and cinematic experience use compact quiet-brass highlight bands with forest-night text, matching the approved local reference.
 - **Section Display** (400, responsive large scale, 0.92 line height): Offer, proof, method, and enquiry headlines.
 - **Feature Body** (400, responsive medium scale, 1.35 line height): Short explanatory paragraphs and the commercial proposition, set in the display face for warmth.
 - **Utility Label** (600–700, compact scale, 0.16–0.22em tracking, uppercase): Navigation, actions, scene status, form labels, captions, and provenance.
