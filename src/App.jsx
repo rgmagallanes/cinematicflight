@@ -37,13 +37,36 @@ function FlightHero() {
     const targetTimes = Array(clips.length).fill(null);
     let frame = 0;
 
+    // Scroll scrubbing seeks on every frame. If the target byte range is not
+    // already downloaded each seek opens a range request that the next frame
+    // aborts, so nothing ever arrives. Buffer whole clips up front instead.
+    const startBuffering = (videoIndex) => {
+      const video = videosRef.current[videoIndex];
+      if (!video || video.preload === "auto") return;
+      video.preload = "auto";
+      video.load();
+    };
+
+    const bufferedThrough = (video) => {
+      if (!video?.buffered?.length) return 0;
+      // Sequential download from zero, so only the range covering the start
+      // tells us how far the clip can be scrubbed without a new request.
+      for (let range = 0; range < video.buffered.length; range += 1) {
+        if (video.buffered.start(range) <= 0.05) return video.buffered.end(range);
+      }
+      return 0;
+    };
+
+    const isBuffered = (video) => {
+      if (!Number.isFinite(video?.duration) || video.duration <= 0) return false;
+      return bufferedThrough(video) >= video.duration - 0.15;
+    };
+
     const loadAround = (index) => {
-      [index - 1, index, index + 1].forEach((videoIndex) => {
-        const video = videosRef.current[videoIndex];
-        if (!video || video.preload !== "none") return;
-        video.preload = "metadata";
-        video.load();
-      });
+      startBuffering(index);
+      // Stage the neighbour so two full-rate downloads never split the pipe:
+      // the clip on screen has to win.
+      if (isBuffered(videosRef.current[index])) startBuffering(index + 1);
     };
 
     const primeCurrent = () => {
@@ -65,7 +88,15 @@ function FlightHero() {
         || video.duration <= 0
       ) return;
 
-      const clampedTarget = Math.min(video.duration - 0.025, Math.max(0, target));
+      // Never seek past what has arrived. Riding the buffer edge keeps the
+      // flight moving as fast as the network allows instead of stalling on a
+      // stale frame, and never asks for bytes that are not already here.
+      const reachable = Math.max(0, bufferedThrough(video) - 0.05);
+      const clampedTarget = Math.min(
+        video.duration - 0.025,
+        reachable,
+        Math.max(0, target),
+      );
       const threshold = coarsePointer.matches ? 0.02 : 0.008;
       if (Math.abs(video.currentTime - clampedTarget) <= threshold) return;
 
@@ -132,6 +163,8 @@ function FlightHero() {
       video?.addEventListener("seeked", onSeeked);
       video?.addEventListener("loadedmetadata", requestRender);
       video?.addEventListener("durationchange", requestRender);
+      video?.addEventListener("progress", requestRender);
+      video?.addEventListener("canplaythrough", requestRender);
       return { video, onSeeked };
     });
 
@@ -152,6 +185,8 @@ function FlightHero() {
         video?.removeEventListener("seeked", onSeeked);
         video?.removeEventListener("loadedmetadata", requestRender);
         video?.removeEventListener("durationchange", requestRender);
+        video?.removeEventListener("progress", requestRender);
+        video?.removeEventListener("canplaythrough", requestRender);
       });
     };
   }, []);
@@ -176,7 +211,7 @@ function FlightHero() {
                 videosRef.current[index] = node;
               }}
               poster={clip.poster}
-              preload={index === 0 ? "metadata" : "none"}
+              preload={index === 0 ? "auto" : "none"}
               muted
               playsInline
               onLoadedMetadata={() => setReadyCount((count) => count + 1)}
