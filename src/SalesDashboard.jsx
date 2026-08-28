@@ -35,12 +35,12 @@ import {
 } from "@phosphor-icons/react";
 
 const initialInquiries = [
-  { id: 1, property: "Riverstone Lodge", contact: "Amelia Hart", email: "amelia@example.com", stage: "Proposal", activity: "Aug 25", next: "Follow up on proposal", due: "9:30 AM", detail: "Proposal sent Aug 25" },
-  { id: 2, property: "Alta Vista Retreat", contact: "Marco Silva", email: "marco@example.com", stage: "Replied", activity: "Aug 27", next: "Send availability + rates", due: "11:00 AM", detail: "Replied Aug 27" },
-  { id: 3, property: "The Banyan Estate", contact: "Elena Cruz", email: "elena@example.com", stage: "New", activity: "Aug 28", next: "Qualify and next steps", due: "1:30 PM", detail: "Received Aug 28" },
-  { id: 4, property: "Maréa Cliff House", contact: "Sofia Laurent", email: "sofia@example.com", stage: "Contacted", activity: "Aug 26", next: "Check in and close gaps", due: "3:30 PM", detail: "No reply yet" },
-  { id: 5, property: "Haven Point Villa", contact: "Noah Bennett", email: "noah@example.com", stage: "Qualified", activity: "Aug 24", next: "Prepare property reading", due: "Aug 29", detail: "Qualified Aug 24" },
-  { id: 6, property: "Pinecrest House", contact: "Lina Reyes", email: "lina@example.com", stage: "Replied", activity: "Aug 23", next: "Schedule discovery call", due: "Aug 31", detail: "Replied Aug 23" },
+  { id: 1, property: "Riverstone Lodge", contact: "Amelia Hart", email: "amelia@example.com", stage: "Proposal", activity: "Aug 25", next: "Follow up on proposal", actionStatus: "Due today", due: "9:30 AM", detail: "Proposal sent Aug 25" },
+  { id: 2, property: "Alta Vista Retreat", contact: "Marco Silva", email: "marco@example.com", stage: "Replied", activity: "Aug 27", next: "Send availability + rates", actionStatus: "Due today", due: "11:00 AM", detail: "Replied Aug 27" },
+  { id: 3, property: "The Banyan Estate", contact: "Elena Cruz", email: "elena@example.com", stage: "New", activity: "Aug 28", next: "Qualify and next steps", actionStatus: "Due today", due: "1:30 PM", detail: "Received Aug 28" },
+  { id: 4, property: "Maréa Cliff House", contact: "Sofia Laurent", email: "sofia@example.com", stage: "Contacted", activity: "Aug 26", next: "Check in and close gaps", actionStatus: "Overdue", due: "3:30 PM", detail: "No reply yet" },
+  { id: 5, property: "Haven Point Villa", contact: "Noah Bennett", email: "noah@example.com", stage: "Qualified", activity: "Aug 24", next: "Prepare property reading", actionStatus: "Upcoming", due: "Aug 29", detail: "Qualified Aug 24" },
+  { id: 6, property: "Pinecrest House", contact: "Lina Reyes", email: "lina@example.com", stage: "Replied", activity: "Aug 23", next: "Schedule discovery call", actionStatus: "Upcoming", due: "Aug 31", detail: "Replied Aug 23" },
 ];
 
 const initialPropertyFiles = [
@@ -93,6 +93,7 @@ const metrics = [
 ];
 
 const stageOrder = ["New", "Contacted", "Replied", "Qualified", "Proposal", "Won"];
+const actionStatusOptions = ["Due today", "Upcoming", "Overdue", "Completed"];
 const pipelineSummary = [
   { stage: "New", value: 12, note: "+4 today" },
   { stage: "Contacted", value: 9, note: "75% reached" },
@@ -161,6 +162,11 @@ function Status({ stage }) {
   return <span className={`status status-${stage.toLowerCase()}`}><i aria-hidden="true" />{stage}</span>;
 }
 
+function ActionStatus({ value = "Upcoming" }) {
+  const slug = value.toLowerCase().replaceAll(" ", "-");
+  return <span className={`action-status action-status-${slug}`}><i aria-hidden="true" />{value}</span>;
+}
+
 function HomeView({ inquiries, setActiveView, openInquiry, openAdd }) {
   const today = inquiries.slice(0, 4);
   return (
@@ -182,7 +188,7 @@ function HomeView({ inquiries, setActiveView, openInquiry, openAdd }) {
             {today.map((inquiry) => (
               <button type="button" className="task-row" key={inquiry.id} onClick={() => openInquiry(inquiry)}>
                 <time>{inquiry.due}<small>Due</small></time>
-                <span><strong>{inquiry.next}</strong><b>{inquiry.property}</b><small>{inquiry.detail}</small></span>
+                <span><strong>{inquiry.next}</strong><b>{inquiry.property}</b><ActionStatus value={inquiry.actionStatus} /></span>
                 <ArrowRight size={20} aria-hidden="true" />
               </button>
             ))}
@@ -236,10 +242,10 @@ function EnquiriesView({ inquiries, openInquiry, openAdd }) {
       <PageHeader title="Enquiries" copy="Every property conversation, with the next action kept visible." action={<button className="primary-action" type="button" onClick={openAdd}><Plus size={17} /> Add enquiry</button>} />
       <label className="dashboard-search"><MagnifyingGlass size={19} /><span className="sr-only">Search enquiries</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search property, contact or stage" /></label>
       <section className="full-enquiry-list">
-        <div className="full-list-head"><span>Property</span><span>Contact</span><span>Stage</span><span>Next action</span><span>Last activity</span></div>
+        <div className="full-list-head"><span>Property</span><span>Contact</span><span>Stage</span><span>Next action &amp; status</span><span>Last activity</span></div>
         {filtered.map((inquiry) => (
           <button type="button" key={inquiry.id} onClick={() => openInquiry(inquiry)}>
-            <strong>{inquiry.property}</strong><span>{inquiry.contact}</span><Status stage={inquiry.stage} /><span>{inquiry.next}</span><time>{inquiry.activity}</time>
+            <strong>{inquiry.property}</strong><span>{inquiry.contact}</span><Status stage={inquiry.stage} /><span className="next-action-cell"><b>{inquiry.next}</b><ActionStatus value={inquiry.actionStatus} /></span><time>{inquiry.activity}</time>
           </button>
         ))}
       </section>
@@ -257,7 +263,7 @@ function PipelineView({ inquiries, openInquiry }) {
             <header><span>{stage}</span><b>{inquiries.filter((item) => item.stage === stage).length}</b></header>
             {inquiries.filter((item) => item.stage === stage).map((inquiry) => (
               <button type="button" key={inquiry.id} onClick={() => openInquiry(inquiry)}>
-                <strong>{inquiry.property}</strong><span>{inquiry.contact}</span><small>{inquiry.next}</small>
+                <strong>{inquiry.property}</strong><span>{inquiry.contact}</span><small>{inquiry.next}</small><ActionStatus value={inquiry.actionStatus} />
               </button>
             ))}
           </div>
@@ -275,7 +281,7 @@ function CalendarView({ inquiries, openInquiry }) {
         <header><span>Friday</span><strong>28</strong><p>August 2026</p></header>
         <div>
           {inquiries.slice(0, 4).map((inquiry) => (
-            <button type="button" key={inquiry.id} onClick={() => openInquiry(inquiry)}><time>{inquiry.due}</time><span><strong>{inquiry.next}</strong><small>{inquiry.property}</small></span><Status stage={inquiry.stage} /></button>
+            <button type="button" key={inquiry.id} onClick={() => openInquiry(inquiry)}><time>{inquiry.due}</time><span><strong>{inquiry.next}</strong><small>{inquiry.property}</small><ActionStatus value={inquiry.actionStatus} /></span><Status stage={inquiry.stage} /></button>
           ))}
         </div>
       </section>
@@ -515,19 +521,31 @@ function PropertyFilesView({ inquiries, openInquiry, setActiveView }) {
   );
 }
 
-function InquiryDialog({ inquiry, onClose }) {
+function InquiryDialog({ inquiry, onClose, onUpdate }) {
+  const [form, setForm] = useState({ stage: inquiry.stage, next: inquiry.next, due: inquiry.due, actionStatus: inquiry.actionStatus || "Upcoming", note: `Review ${inquiry.property} and prepare the next response.` });
   if (!inquiry) return null;
+  const save = (event) => {
+    event.preventDefault();
+    onUpdate({ ...inquiry, ...form, activity: "Aug 28", detail: `${form.actionStatus} · ${form.due}` });
+    onClose();
+  };
   return (
     <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className="inquiry-dialog" role="dialog" aria-modal="true" aria-labelledby="inquiry-dialog-title">
+      <form className="inquiry-dialog" onSubmit={save} role="dialog" aria-modal="true" aria-labelledby="inquiry-dialog-title">
         <button className="dialog-close" type="button" onClick={onClose} aria-label="Close enquiry"><X size={20} /></button>
         <p className="dashboard-eyebrow">Next enquiry</p>
         <h2 id="inquiry-dialog-title">{inquiry.property}</h2>
-        <Status stage={inquiry.stage} />
-        <dl><div><dt>Contact</dt><dd>{inquiry.contact}</dd></div><div><dt>Email</dt><dd>{inquiry.email}</dd></div><div><dt>Last activity</dt><dd>{inquiry.activity}</dd></div><div><dt>Next action</dt><dd>{inquiry.next}</dd></div></dl>
-        <label>Working note<textarea defaultValue={`Review ${inquiry.property} and prepare the next response.`} /></label>
-        <button className="primary-action" type="button" onClick={onClose}>Mark reviewed <Check size={17} /></button>
-      </section>
+        <div className="inquiry-dialog-status"><Status stage={form.stage} /><ActionStatus value={form.actionStatus} /></div>
+        <dl><div><dt>Contact</dt><dd>{inquiry.contact}</dd></div><div><dt>Email</dt><dd>{inquiry.email}</dd></div><div><dt>Last activity</dt><dd>{inquiry.activity}</dd></div></dl>
+        <div className="inquiry-workflow-fields">
+          <label>Sales stage<select value={form.stage} onChange={(event) => setForm({ ...form, stage: event.target.value })}>{stageOrder.map((stage) => <option key={stage}>{stage}</option>)}</select></label>
+          <label>Action status<select value={form.actionStatus} onChange={(event) => setForm({ ...form, actionStatus: event.target.value })}>{actionStatusOptions.map((status) => <option key={status}>{status}</option>)}</select></label>
+          <label className="is-wide">Next action<input required value={form.next} onChange={(event) => setForm({ ...form, next: event.target.value })} /></label>
+          <label>Due<input required value={form.due} onChange={(event) => setForm({ ...form, due: event.target.value })} placeholder="Today, 3:30 PM" /></label>
+        </div>
+        <label>Working note<textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} /></label>
+        <div className="inquiry-dialog-actions"><button className="primary-action" type="submit">Save sales update <Check size={17} /></button><button className="text-action" type="button" onClick={() => setForm({ ...form, actionStatus: "Completed" })}>Mark action complete</button></div>
+      </form>
     </div>
   );
 }
@@ -537,7 +555,7 @@ function AddInquiryDialog({ onAdd, onClose }) {
   const submit = (event) => {
     event.preventDefault();
     if (!form.property.trim() || !form.contact.trim() || !form.email.trim()) return;
-    onAdd({ id: Date.now(), ...form, stage: "New", activity: "Aug 28", next: "Review new enquiry", due: "Today", detail: "Received Aug 28" });
+    onAdd({ id: Date.now(), ...form, stage: "New", activity: "Aug 28", next: "Review new enquiry", actionStatus: "Due today", due: "Today", detail: "Received Aug 28" });
     onClose();
   };
   return (
@@ -556,7 +574,9 @@ function AddInquiryDialog({ onAdd, onClose }) {
 
 export function SalesDashboard() {
   const [activeView, setActiveView] = useState("home");
-  const [inquiries, setInquiries] = useState(initialInquiries);
+  const [inquiries, setInquiries] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("cinematic-flight-inquiries-v1")) || initialInquiries; } catch { return initialInquiries; }
+  });
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [adding, setAdding] = useState(false);
   const title = useMemo(() => navItems.find((item) => item.id === activeView)?.label, [activeView]);
@@ -570,6 +590,9 @@ export function SalesDashboard() {
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
   }, []);
+  useEffect(() => { localStorage.setItem("cinematic-flight-inquiries-v1", JSON.stringify(inquiries)); }, [inquiries]);
+
+  const updateInquiry = (updated) => setInquiries((current) => current.map((item) => item.id === updated.id ? updated : item));
 
   const common = { inquiries, openInquiry: setSelectedInquiry, openAdd: () => setAdding(true) };
 
@@ -583,7 +606,7 @@ export function SalesDashboard() {
         {activeView === "calendar" && <CalendarView {...common} />}
         {activeView === "documents" && <PropertyFilesView {...common} setActiveView={setActiveView} />}
       </main>
-      {selectedInquiry && <InquiryDialog inquiry={selectedInquiry} onClose={() => setSelectedInquiry(null)} />}
+      {selectedInquiry && <InquiryDialog key={selectedInquiry.id} inquiry={selectedInquiry} onClose={() => setSelectedInquiry(null)} onUpdate={updateInquiry} />}
       {adding && <AddInquiryDialog onClose={() => setAdding(false)} onAdd={(inquiry) => setInquiries((current) => [inquiry, ...current])} />}
     </div>
   );

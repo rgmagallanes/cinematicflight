@@ -20,6 +20,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 
 - Name the private application **Cinematic Flight Studio** and use `studio.cinematicflight.com` as its intended production address. Keep it distinct from the public Cinematic Flight marketing website.
 - Build the Hostinger Studio artifact with the committed `.env.studio` app mode so the dashboard renders directly at the subdomain root without an HTTP redirect; keep the ordinary production build serving the public marketing experience at `/`.
+- Keep Hostinger compatible with a fixed `npm run build` command by also detecting the exact `studio.cinematicflight.com` hostname at runtime. The ordinary artifact must show Studio on that hostname and the marketing site on `cinematicflight.com`; `.env.studio` remains the explicit local/dedicated-build mode.
 - Use the selected “Owner’s Daily Flight Deck” image mockup as the source of truth for the private sales dashboard.
 - Keep the dashboard separate from the public marketing experience at `/dashboard`.
 - Lead with today’s enquiry work, reach and reply health, recent enquiries, and the next best action; keep the document workspace available without letting it compete with the daily sales view.
@@ -61,3 +62,9 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Keep persuasion in the argument, not in the visual volume. The restrained system is the brand; a louder treatment was tried and rejected.
 - Illustrate the problem section with "the flattening": one verified property photograph shown in five steps, each shorter and more drained than the last, ending as an inert strip. It depicts the loss the copy names; the comparison of gallery against flight belongs to the following section and must not be repeated here.
 - Do not introduce AI-generated or illustrated imagery anywhere on this site. The offer rests on real photographs of the real place, and synthetic imagery would undercut it.
+
+## Studio sales workflow decisions
+
+- Every enquiry must carry two separate operational signals: its sales stage and its next-action status.
+- Next-action status uses four clear states: Due today, Upcoming, Overdue, and Completed.
+- Stage, next action, due timing, and action status must be editable from the enquiry detail and saved locally in the prototype.

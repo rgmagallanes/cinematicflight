@@ -5,7 +5,8 @@ import { SalesDashboard } from "./SalesDashboard.jsx";
 import "./styles.css";
 import "./dashboard.css";
 
-const isStudioBuild = import.meta.env.VITE_APP_MODE === "studio";
+const isStudioHostname = window.location.hostname.toLowerCase() === "studio.cinematicflight.com";
+const isStudioBuild = import.meta.env.VITE_APP_MODE === "studio" || isStudioHostname;
 const isDashboard = isStudioBuild || window.location.pathname.startsWith("/dashboard");
 
 createRoot(document.getElementById("root")).render(
