@@ -388,6 +388,36 @@
 .library-file-table button > span:nth-child(3) { color: #7a847d; font-size: 0.58rem; }
 .property-toast { position: fixed; right: 28px; bottom: 25px; z-index: 50; display: flex; align-items: center; gap: 8px; padding: 12px 16px; color: #ede7dc; background: #102019; box-shadow: 0 12px 35px rgba(5, 15, 10, 0.22); font-size: 0.64rem; }
 
+.win-celebration { position: fixed; z-index: 80; inset: 0; display: grid; place-items: center; overflow: hidden; background: rgba(7, 17, 13, 0.28); pointer-events: none; animation: win-backdrop 3.35s ease forwards; }
+.win-trophy-stage { position: relative; display: grid; width: min(420px, calc(100% - 36px)); min-height: 250px; place-items: center; align-content: center; color: var(--dashboard-paper); background: var(--dashboard-night-soft); box-shadow: 0 24px 70px rgba(5, 15, 10, 0.3); animation: win-stage-pop 3.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.win-confetti { position: absolute; top: 42%; left: 50%; width: 1px; height: 1px; }
+.win-confetti i {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 7px;
+  height: 16px;
+  background: var(--dashboard-brass);
+  opacity: 0;
+  animation: confetti-pop 1.35s cubic-bezier(0.12, 0.72, 0.24, 1) var(--delay) forwards;
+}
+.win-confetti i:nth-child(3n) { background: var(--dashboard-paper-light); }
+.win-confetti i:nth-child(4n) { width: 7px; height: 7px; background: #d6a553; border-radius: 50%; }
+.win-trophy { position: relative; z-index: 2; display: grid; width: 112px; height: 112px; place-items: center; color: #d6a553; border: 1px solid rgba(214, 165, 83, 0.55); border-radius: 50%; animation: trophy-pop 720ms cubic-bezier(0.16, 1, 0.3, 1) 90ms both; }
+.win-message { position: relative; z-index: 2; margin-top: 19px; text-align: center; }
+.win-message span { display: grid; gap: 5px; }
+.win-message strong { color: var(--dashboard-paper-light); font-family: "Bodoni Moda", Georgia, serif; font-size: 1.6rem; font-weight: 400; }
+.win-message small { color: var(--dashboard-sage); font-size: 0.68rem; line-height: 1.4; }
+@keyframes confetti-pop { 0% { opacity: 0; transform: rotate(var(--angle)) translateX(12px) rotate(0); } 12% { opacity: 1; } 68% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--angle)) translateX(var(--distance)) rotate(var(--turn)); } }
+@keyframes trophy-pop { 0% { opacity: 0; transform: scale(0.45) rotate(-8deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes win-stage-pop { 0% { opacity: 0; transform: scale(0.9); } 10%, 84% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.97); } }
+@keyframes win-backdrop { 0%, 100% { background: rgba(7, 17, 13, 0); } 10%, 84% { background: rgba(7, 17, 13, 0.28); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .win-confetti { display: none; }
+  .win-trophy-stage, .win-trophy, .win-celebration { animation: none; }
+}
+
 @media print {
   .dashboard-sidebar,
   .property-file-navigator,
@@ -469,4 +499,5 @@
   .library-file-table time { display: none; }
   .inquiry-dialog { padding: 54px 28px; }.add-dialog { margin: 0; align-self: stretch; }
   .inquiry-workflow-fields { grid-template-columns: 1fr; }.inquiry-workflow-fields .is-wide { grid-column: auto; }.inquiry-dialog-actions { align-items: stretch; flex-direction: column; }.inquiry-dialog-actions .text-action { min-height: 40px; }
+  .win-trophy-stage { min-height: 230px; }
 }

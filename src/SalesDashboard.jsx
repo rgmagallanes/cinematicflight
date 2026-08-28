@@ -29,6 +29,7 @@ import {
   TextItalic,
   TextUnderline,
   Table,
+  Trophy,
   UploadSimple,
   WarningCircle,
   X,
@@ -165,6 +166,27 @@ function Status({ stage }) {
 function ActionStatus({ value = "Upcoming" }) {
   const slug = value.toLowerCase().replaceAll(" ", "-");
   return <span className={`action-status action-status-${slug}`}><i aria-hidden="true" />{value}</span>;
+}
+
+function WinCelebration({ property, onComplete }) {
+  useEffect(() => {
+    const timer = window.setTimeout(onComplete, 3600);
+    return () => window.clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <div className="win-celebration" role="status" aria-live="polite">
+      <div className="win-trophy-stage">
+        <div className="win-confetti" aria-hidden="true">
+          {Array.from({ length: 34 }, (_, index) => <i key={index} style={{ "--angle": `${index * (360 / 34)}deg`, "--distance": `${92 + (index % 5) * 24}px`, "--delay": `${(index % 6) * 28}ms`, "--turn": `${240 + index * 23}deg` }} />)}
+        </div>
+        <div className="win-trophy"><Trophy size={68} weight="fill" aria-hidden="true" /></div>
+        <div className="win-message">
+          <span><strong>Enquiry won</strong><small>{property} has moved into the won stage.</small></span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function HomeView({ inquiries, setActiveView, openInquiry, openAdd }) {
@@ -579,6 +601,7 @@ export function SalesDashboard() {
   });
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [adding, setAdding] = useState(false);
+  const [celebration, setCelebration] = useState(null);
   const title = useMemo(() => navItems.find((item) => item.id === activeView)?.label, [activeView]);
 
   useEffect(() => {
@@ -592,7 +615,11 @@ export function SalesDashboard() {
   }, []);
   useEffect(() => { localStorage.setItem("cinematic-flight-inquiries-v1", JSON.stringify(inquiries)); }, [inquiries]);
 
-  const updateInquiry = (updated) => setInquiries((current) => current.map((item) => item.id === updated.id ? updated : item));
+  const updateInquiry = (updated) => {
+    const previous = inquiries.find((item) => item.id === updated.id);
+    setInquiries((current) => current.map((item) => item.id === updated.id ? updated : item));
+    if (updated.stage === "Won" && previous?.stage !== "Won") setCelebration({ id: Date.now(), property: updated.property });
+  };
 
   const common = { inquiries, openInquiry: setSelectedInquiry, openAdd: () => setAdding(true) };
 
@@ -608,6 +635,7 @@ export function SalesDashboard() {
       </main>
       {selectedInquiry && <InquiryDialog key={selectedInquiry.id} inquiry={selectedInquiry} onClose={() => setSelectedInquiry(null)} onUpdate={updateInquiry} />}
       {adding && <AddInquiryDialog onClose={() => setAdding(false)} onAdd={(inquiry) => setInquiries((current) => [inquiry, ...current])} />}
+      {celebration && <WinCelebration key={celebration.id} property={celebration.property} onComplete={() => setCelebration(null)} />}
     </div>
   );
 }

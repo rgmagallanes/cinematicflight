@@ -68,3 +68,4 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Every enquiry must carry two separate operational signals: its sales stage and its next-action status.
 - Next-action status uses four clear states: Due today, Upcoming, Overdue, and Completed.
 - Stage, next action, due timing, and action status must be editable from the enquiry detail and saved locally in the prototype.
+- Celebrate the first transition into the Won stage with a centered brass trophy and a brief radial confetti pop, plus a clear confirmation message; respect reduced-motion preferences.
