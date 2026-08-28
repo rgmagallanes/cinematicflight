@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { loadInquiries, loadPropertyFiles, saveInquiry, savePropertyFiles, seedInquiries } from "./lib/studioData.js";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { deleteInquiryImage, loadInquiries, loadInquiryImages, loadPropertyFiles, saveInquiry, savePropertyFiles, seedInquiries, uploadInquiryImages } from "./lib/studioData.js";
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowSquareOut,
   CalendarBlank,
   CaretDown,
   CaretRight,
@@ -18,6 +19,7 @@ import {
   FolderOpen,
   FunnelSimple,
   Gauge,
+  ImageSquare,
   LinkSimple,
   ListBullets,
   ListNumbers,
@@ -30,6 +32,7 @@ import {
   TextItalic,
   TextUnderline,
   Table,
+  Trash,
   Trophy,
   UploadSimple,
   WarningCircle,
@@ -561,7 +564,93 @@ function PropertyFilesView({ inquiries, openInquiry, setActiveView, cloudUser })
   );
 }
 
-function InquiryDialog({ inquiry, onClose, onUpdate }) {
+const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const maximumImageBytes = 8 * 1024 * 1024;
+
+function imageSizeLabel(bytes) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function ClientImageAttachments({ inquiry, cloudUser }) {
+  const [images, setImages] = useState([]);
+  const [state, setState] = useState({ status: cloudUser ? "loading" : "idle", message: "" });
+  const temporaryUrls = useRef([]);
+
+  useEffect(() => {
+    if (!cloudUser) return undefined;
+    let active = true;
+    loadInquiryImages(inquiry.id)
+      .then((remote) => { if (active) { setImages(remote); setState({ status: "idle", message: "" }); } })
+      .catch((error) => { if (active) setState({ status: "error", message: error.message }); });
+    return () => { active = false; };
+  }, [cloudUser, inquiry.id]);
+
+  useEffect(() => () => temporaryUrls.current.forEach((url) => URL.revokeObjectURL(url)), []);
+
+  const addFiles = async (fileList) => {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    if (files.length > 12) return setState({ status: "error", message: "Choose no more than 12 images at once." });
+    const invalid = files.find((file) => !allowedImageTypes.has(file.type) || file.size > maximumImageBytes);
+    if (invalid) return setState({ status: "error", message: `${invalid.name} must be a JPEG, PNG, WebP, or GIF under 8 MB.` });
+    setState({ status: "uploading", message: `Adding ${files.length} ${files.length === 1 ? "image" : "images"}…` });
+    if (!cloudUser) {
+      const previews = files.map((file) => {
+        const url = URL.createObjectURL(file);
+        temporaryUrls.current.push(url);
+        return { id: `local-${crypto.randomUUID()}`, name: file.name, mimeType: file.type, byteSize: file.size, url, local: true };
+      });
+      setImages((current) => [...previews, ...current]);
+      setState({ status: "idle", message: "Preview added. Sign in on Studio to store it permanently." });
+      return;
+    }
+    try {
+      const created = await uploadInquiryImages(inquiry.id, files);
+      setImages((current) => [...created, ...current]);
+      setState({ status: "idle", message: `${created.length} ${created.length === 1 ? "image" : "images"} attached.` });
+    } catch (error) {
+      setState({ status: "error", message: error.message });
+    }
+  };
+
+  const removeImage = async (image) => {
+    if (!window.confirm(`Remove ${image.name} from this enquiry?`)) return;
+    setState({ status: "deleting", message: `Removing ${image.name}…` });
+    try {
+      if (!image.local) await deleteInquiryImage(image.id);
+      if (image.local) URL.revokeObjectURL(image.url);
+      setImages((current) => current.filter((item) => item.id !== image.id));
+      setState({ status: "idle", message: "Image removed." });
+    } catch (error) {
+      setState({ status: "error", message: error.message });
+    }
+  };
+
+  const busy = state.status === "uploading" || state.status === "deleting" || state.status === "loading";
+  return (
+    <section className="client-image-attachments" aria-labelledby="client-images-title">
+      <header>
+        <div><h3 id="client-images-title">Client images</h3><p>Reference photographs linked to this enquiry.</p></div>
+        <span>{images.length} {images.length === 1 ? "image" : "images"}</span>
+      </header>
+      <label className={`client-image-drop ${busy ? "is-busy" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); if (!busy) addFiles(event.dataTransfer.files); }}>
+        <ImageSquare size={24} weight="light" aria-hidden="true" />
+        <span><strong>{state.status === "uploading" ? "Uploading images…" : "Add client images"}</strong><small>Drop files here or choose from your device · JPEG, PNG, WebP or GIF · 8 MB each</small></span>
+        <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple disabled={busy} onChange={(event) => { addFiles(event.target.files); event.target.value = ""; }} />
+      </label>
+      {state.message && <p className={`client-image-message ${state.status === "error" ? "is-error" : ""}`} role="status">{state.message}</p>}
+      {images.length > 0 ? <div className="client-image-grid">
+        {images.map((image) => <article key={image.id}>
+          <a href={image.url} target="_blank" rel="noreferrer" aria-label={`Open ${image.name} full size`}><img src={image.url} alt="" loading="lazy" /><span className="client-image-view">View full size <ArrowSquareOut size={13} /></span></a>
+          <div><span><strong title={image.name}>{image.name}</strong><small>{imageSizeLabel(image.byteSize)}{image.local ? " · Preview" : ""}</small></span><button type="button" onClick={() => removeImage(image)} disabled={busy} aria-label={`Remove ${image.name}`}><Trash size={16} /></button></div>
+        </article>)}
+      </div> : state.status !== "loading" && <p className="client-image-empty">No client images attached yet.</p>}
+    </section>
+  );
+}
+
+function InquiryDialog({ inquiry, onClose, onUpdate, cloudUser }) {
   const [form, setForm] = useState({ stage: inquiry.stage, next: inquiry.next, due: inquiry.due, actionStatus: inquiry.actionStatus || "Upcoming", note: inquiry.note || `Review ${inquiry.property} and prepare the next response.` });
   if (!inquiry) return null;
   const save = (event) => {
@@ -584,6 +673,7 @@ function InquiryDialog({ inquiry, onClose, onUpdate }) {
           <label>Due<input required value={form.due} onChange={(event) => setForm({ ...form, due: event.target.value })} placeholder="Today, 3:30 PM" /></label>
         </div>
         <label>Working note<textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} /></label>
+        <ClientImageAttachments inquiry={inquiry} cloudUser={cloudUser} />
         <div className="inquiry-dialog-actions"><button className="primary-action" type="submit">Save sales update <Check size={17} /></button><button className="text-action" type="button" onClick={() => setForm({ ...form, actionStatus: "Completed" })}>Mark action complete</button></div>
       </form>
     </div>
@@ -672,7 +762,7 @@ export function SalesDashboard({ cloudUser = null, onSignOut = null }) {
         {activeView === "calendar" && <CalendarView {...common} />}
         {activeView === "documents" && <PropertyFilesView {...common} setActiveView={setActiveView} cloudUser={cloudUser} />}
       </main>
-      {selectedInquiry && <InquiryDialog key={selectedInquiry.id} inquiry={selectedInquiry} onClose={() => setSelectedInquiry(null)} onUpdate={updateInquiry} />}
+      {selectedInquiry && <InquiryDialog key={selectedInquiry.id} inquiry={selectedInquiry} cloudUser={cloudUser} onClose={() => setSelectedInquiry(null)} onUpdate={updateInquiry} />}
       {adding && <AddInquiryDialog onClose={() => setAdding(false)} onAdd={addInquiry} />}
       {celebration && <WinCelebration key={celebration.id} property={celebration.property} onComplete={() => setCelebration(null)} />}
       {cloudMessage && <div className="property-toast" role="status"><Check size={16} />{cloudMessage}</div>}

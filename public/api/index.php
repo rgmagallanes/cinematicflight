@@ -59,6 +59,24 @@ function text_value(array $row, string $key, int $maximum = 1000): string
     return $value;
 }
 
+function image_storage_path(array $config): string
+{
+    return rtrim((string) ($config['image_storage_path'] ?? dirname(__DIR__, 2) . '/cinematic-flight-storage/client-images'), DIRECTORY_SEPARATOR);
+}
+
+function image_public_row(array $row): array
+{
+    return [
+        'id' => (int) $row['id'],
+        'inquiryId' => $row['inquiry_external_id'],
+        'name' => $row['original_name'],
+        'mimeType' => $row['mime_type'],
+        'byteSize' => (int) $row['byte_size'],
+        'createdAt' => $row['created_at'],
+        'url' => '/api/index.php?action=inquiry-image&id=' . rawurlencode((string) $row['id']),
+    ];
+}
+
 $configFile = __DIR__ . '/config.php';
 $action = (string) ($_GET['action'] ?? 'status');
 
@@ -153,6 +171,112 @@ if ($action === 'logout' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $ownerId = require_user();
+
+if ($action === 'inquiry-image' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $imageId = (int) ($_GET['id'] ?? 0);
+    if ($imageId < 1) respond(['error' => 'The image could not be found.'], 404);
+    try {
+        $statement = $pdo->prepare('select id, storage_name, original_name, mime_type, byte_size from studio_inquiry_images where id = ? and owner_id = ? limit 1');
+        $statement->execute([$imageId, $ownerId]);
+        $image = $statement->fetch();
+    } catch (Throwable $error) {
+        error_log('Cinematic Flight Studio image read failed: ' . $error->getMessage());
+        respond(['error' => 'Client image storage has not been set up yet.'], 503);
+    }
+    if (!$image) respond(['error' => 'The image could not be found.'], 404);
+    $path = image_storage_path($config) . DIRECTORY_SEPARATOR . $image['storage_name'];
+    if (!is_file($path)) respond(['error' => 'The image file is unavailable.'], 404);
+    header('Content-Type: ' . $image['mime_type']);
+    header('Content-Length: ' . (string) filesize($path));
+    header("Content-Disposition: inline; filename*=UTF-8''" . rawurlencode((string) $image['original_name']));
+    header('Cache-Control: private, max-age=300');
+    readfile($path);
+    exit;
+}
+
+if ($action === 'inquiry-images' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $inquiryId = trim((string) ($_GET['inquiryId'] ?? ''));
+    if ($inquiryId === '' || strlen($inquiryId) > 80) respond(['error' => 'Choose a valid enquiry.'], 422);
+    try {
+        $statement = $pdo->prepare('select id, inquiry_external_id, original_name, mime_type, byte_size, created_at from studio_inquiry_images where owner_id = ? and inquiry_external_id = ? order by created_at desc, id desc');
+        $statement->execute([$ownerId, $inquiryId]);
+        $images = array_map('image_public_row', $statement->fetchAll());
+    } catch (Throwable $error) {
+        error_log('Cinematic Flight Studio image list failed: ' . $error->getMessage());
+        respond(['error' => 'Client image storage has not been set up yet. Run the client-images SQL migration.'], 503);
+    }
+    respond(['data' => $images, 'csrfToken' => csrf_token()]);
+}
+
+if ($action === 'inquiry-images' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
+    $inquiryId = trim((string) ($_POST['inquiryId'] ?? ''));
+    if ($inquiryId === '' || strlen($inquiryId) > 80) respond(['error' => 'Choose a valid enquiry.'], 422);
+    $inquiryCheck = $pdo->prepare('select 1 from studio_inquiries where owner_id = ? and external_id = ? limit 1');
+    $inquiryCheck->execute([$ownerId, $inquiryId]);
+    if (!$inquiryCheck->fetchColumn()) respond(['error' => 'The linked enquiry could not be found.'], 404);
+
+    $uploads = $_FILES['images'] ?? null;
+    $names = is_array($uploads['name'] ?? null) ? $uploads['name'] : [];
+    if (!$uploads || count($names) < 1 || count($names) > 12) respond(['error' => 'Choose between 1 and 12 images.'], 422);
+    $maximumBytes = max(1048576, min(20971520, (int) ($config['image_upload_max_bytes'] ?? 8388608)));
+    $allowedTypes = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
+    $storagePath = image_storage_path($config);
+    if (!is_dir($storagePath) && !mkdir($storagePath, 0700, true) && !is_dir($storagePath)) respond(['error' => 'The private image folder could not be created.'], 500);
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $insert = $pdo->prepare('insert into studio_inquiry_images (owner_id, inquiry_external_id, original_name, storage_name, mime_type, byte_size) values (?, ?, ?, ?, ?, ?)');
+    $storedPaths = [];
+    $created = [];
+    $pdo->beginTransaction();
+    try {
+        foreach ($names as $index => $rawName) {
+            $errorCode = (int) ($uploads['error'][$index] ?? UPLOAD_ERR_NO_FILE);
+            if ($errorCode !== UPLOAD_ERR_OK) throw new RuntimeException($errorCode === UPLOAD_ERR_INI_SIZE || $errorCode === UPLOAD_ERR_FORM_SIZE ? 'One image exceeds the server upload limit.' : 'One image could not be uploaded.');
+            $temporaryPath = (string) ($uploads['tmp_name'][$index] ?? '');
+            $byteSize = (int) ($uploads['size'][$index] ?? 0);
+            if (!is_uploaded_file($temporaryPath) || $byteSize < 1 || $byteSize > $maximumBytes) throw new RuntimeException('Each image must be smaller than ' . round($maximumBytes / 1048576) . ' MB.');
+            $mimeType = (string) $finfo->file($temporaryPath);
+            if (!isset($allowedTypes[$mimeType])) throw new RuntimeException('Only JPEG, PNG, WebP, and GIF images are supported.');
+            $originalName = trim((string) preg_replace('/[\x00-\x1F\x7F]+/u', '', basename((string) $rawName)));
+            if ($originalName === '') $originalName = 'client-image.' . $allowedTypes[$mimeType];
+            if (strlen($originalName) > 255) $originalName = substr($originalName, 0, 240) . '.' . $allowedTypes[$mimeType];
+            $storageName = bin2hex(random_bytes(24)) . '.' . $allowedTypes[$mimeType];
+            $destination = $storagePath . DIRECTORY_SEPARATOR . $storageName;
+            if (!move_uploaded_file($temporaryPath, $destination)) throw new RuntimeException('The server could not store one image.');
+            chmod($destination, 0600);
+            $storedPaths[] = $destination;
+            $insert->execute([$ownerId, $inquiryId, $originalName, $storageName, $mimeType, $byteSize]);
+            $created[] = image_public_row(['id' => (int) $pdo->lastInsertId(), 'inquiry_external_id' => $inquiryId, 'original_name' => $originalName, 'mime_type' => $mimeType, 'byte_size' => $byteSize, 'created_at' => date('Y-m-d H:i:s')]);
+        }
+        $pdo->commit();
+    } catch (Throwable $error) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        foreach ($storedPaths as $storedPath) if (is_file($storedPath)) unlink($storedPath);
+        error_log('Cinematic Flight Studio image upload failed: ' . $error->getMessage());
+        respond(['error' => $error instanceof RuntimeException ? $error->getMessage() : 'The images could not be saved.'], 422);
+    }
+    respond(['data' => $created]);
+}
+
+if ($action === 'inquiry-images' && $_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    require_csrf();
+    $imageId = (int) (request_body()['imageId'] ?? 0);
+    if ($imageId < 1) respond(['error' => 'Choose a valid image.'], 422);
+    try {
+        $statement = $pdo->prepare('select storage_name from studio_inquiry_images where id = ? and owner_id = ? limit 1');
+        $statement->execute([$imageId, $ownerId]);
+        $image = $statement->fetch();
+        if (!$image) respond(['error' => 'The image could not be found.'], 404);
+        $delete = $pdo->prepare('delete from studio_inquiry_images where id = ? and owner_id = ?');
+        $delete->execute([$imageId, $ownerId]);
+        $path = image_storage_path($config) . DIRECTORY_SEPARATOR . $image['storage_name'];
+        if (is_file($path) && !unlink($path)) error_log('Cinematic Flight Studio could not remove image file: ' . $path);
+    } catch (Throwable $error) {
+        error_log('Cinematic Flight Studio image delete failed: ' . $error->getMessage());
+        respond(['error' => 'The image could not be removed.'], 500);
+    }
+    respond(['deleted' => true]);
+}
 
 if ($action === 'inquiries' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     $statement = $pdo->prepare('select external_id, property_name, contact_name, contact_email, stage, activity_label, next_action, action_status, due_label, detail, working_note from studio_inquiries where owner_id = ? order by created_at asc');

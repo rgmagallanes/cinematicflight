@@ -189,7 +189,7 @@
 .empty-doc { display: grid; place-items: center; min-height: 480px; color: #7d8881; }
 
 .dialog-backdrop { position: fixed; z-index: 40; inset: 0; display: flex; align-items: stretch; justify-content: flex-end; background: rgba(3, 10, 7, 0.52); backdrop-filter: blur(2px); }
-.inquiry-dialog { position: relative; width: min(520px, 100%); padding: 54px 48px; overflow-y: auto; color: var(--dashboard-ink); background: var(--dashboard-paper-light); box-shadow: -25px 0 60px rgba(3, 10, 7, 0.18); }
+.inquiry-dialog { position: relative; width: min(660px, 100%); padding: 54px 48px; overflow-y: auto; color: var(--dashboard-ink); background: var(--dashboard-paper-light); box-shadow: -25px 0 60px rgba(3, 10, 7, 0.18); }
 .dialog-close { position: absolute; top: 24px; right: 24px; display: grid; place-items: center; width: 38px; height: 38px; background: transparent; border: 1px solid rgba(20, 32, 25, 0.28); cursor: pointer; }
 .inquiry-dialog h2 { margin: 0 0 12px; font-family: "Bodoni Moda", Georgia, serif; font-size: 3rem; font-weight: 400; line-height: 1; }
 .inquiry-dialog dl { margin: 38px 0; border-top: 1px solid rgba(20, 32, 25, 0.2); }
@@ -203,6 +203,37 @@
 .inquiry-dialog textarea { min-height: 110px; resize: vertical; font-family: "Bodoni Moda", Georgia, serif; font-size: 1rem; line-height: 1.5; }
 .inquiry-dialog-actions { display: flex; align-items: center; gap: 20px; }
 .add-dialog { align-self: center; height: auto; max-height: 90vh; margin-right: 4vw; }
+
+.client-image-attachments { margin: 35px 0 36px; padding-top: 25px; border-top: 1px solid rgba(20, 32, 25, 0.2); }
+.client-image-attachments > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 15px; }
+.client-image-attachments h3 { margin: 0; font-family: "Bodoni Moda", Georgia, serif; font-size: 1.35rem; font-weight: 400; }
+.client-image-attachments header p { margin: 5px 0 0; color: #56645a; font-size: 0.72rem; }
+.client-image-attachments header > span { padding-top: 5px; color: #805f2d; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; white-space: nowrap; }
+.client-image-drop { display: grid; grid-template-columns: 31px minmax(0, 1fr); gap: 11px; align-items: center; min-height: 76px; padding: 13px 16px; color: #546359; background: rgba(199, 151, 73, 0.055); border: 1px dashed rgba(128, 95, 45, 0.55); cursor: pointer; transition: border-color 160ms ease, background 160ms ease; }
+.client-image-drop:hover { background: rgba(199, 151, 73, 0.11); border-color: #8b632d; }
+.client-image-drop:focus-within { outline: 2px solid var(--dashboard-focus); outline-offset: 2px; }
+.client-image-drop.is-busy { opacity: 0.62; cursor: wait; }
+.client-image-drop > svg { color: #8b632d; }
+.client-image-drop > span { display: grid; gap: 4px; }
+.client-image-drop strong { color: #344239; font-size: 0.72rem; }
+.client-image-drop small { color: #5d6a61; font-size: 0.62rem; line-height: 1.45; }
+.client-image-drop input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+.client-image-message { margin: 10px 0 0; color: #4e6254; font-size: 0.68rem; line-height: 1.45; }
+.client-image-message.is-error { color: #934b3c; }
+.client-image-empty { margin: 16px 0 0; padding: 18px 0; color: #59675e; border-bottom: 1px solid rgba(20, 32, 25, 0.13); font-size: 0.68rem; }
+.client-image-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 17px; }
+.client-image-grid article { min-width: 0; border-bottom: 1px solid rgba(20, 32, 25, 0.16); }
+.client-image-grid article > a { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; background: #dcd7cd; }
+.client-image-grid img { width: 100%; height: 100%; object-fit: cover; transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1); }
+.client-image-grid a:hover img { transform: scale(1.035); }
+.client-image-view { position: absolute; right: 7px; bottom: 7px; display: inline-flex; align-items: center; gap: 5px; padding: 6px 7px; color: var(--dashboard-paper-light); background: rgba(7, 17, 13, 0.88); font-size: 0.61rem; font-weight: 700; }
+.client-image-grid article > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; }
+.client-image-grid article > div > span { display: grid; min-width: 0; gap: 2px; }
+.client-image-grid article strong { overflow: hidden; color: #354239; font-size: 0.66rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.client-image-grid article small { color: #59675e; font-size: 0.62rem; }
+.client-image-grid button { display: grid; flex: 0 0 auto; width: 32px; height: 32px; place-items: center; color: #7b5b38; background: transparent; border: 0; cursor: pointer; }
+.client-image-grid button:hover { color: #934b3c; background: rgba(147, 75, 60, 0.08); }
+.client-image-grid button:disabled { opacity: 0.45; cursor: wait; }
 
 /* Property Files — approved cabinet + reading desk + document journey hybrid */
 .dashboard-main.is-property-files { height: 100vh; padding: 0; overflow: hidden; }
@@ -517,6 +548,8 @@
   .library-file-table time { display: none; }
   .inquiry-dialog { padding: 54px 28px; }.add-dialog { margin: 0; align-self: stretch; }
   .inquiry-workflow-fields { grid-template-columns: 1fr; }.inquiry-workflow-fields .is-wide { grid-column: auto; }.inquiry-dialog-actions { align-items: stretch; flex-direction: column; }.inquiry-dialog-actions .text-action { min-height: 40px; }
+  .client-image-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .client-image-drop { min-height: 88px; }
   .win-trophy-stage { min-height: 230px; }
   .studio-login { padding: 18px; }.studio-login-panel { padding: 32px 24px; }.studio-login-panel > img { margin-bottom: 38px; }
 }

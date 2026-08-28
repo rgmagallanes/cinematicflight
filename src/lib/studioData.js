@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./hostingerApi.js";
+import { apiDelete, apiGet, apiPost, apiUpload } from "./hostingerApi.js";
 
 const parseExternalId = (value) => /^\d+$/.test(value) ? Number(value) : value;
 
@@ -78,4 +78,21 @@ export async function loadPropertyFiles(ownerId) {
 
 export async function savePropertyFiles(ownerId, properties) {
   await apiPost("property-files", { properties: properties.map((property) => propertyToRow(ownerId, property)) });
+}
+
+export async function loadInquiryImages(inquiryId) {
+  const payload = await apiGet("inquiry-images", { inquiryId: String(inquiryId) });
+  return payload.data;
+}
+
+export async function uploadInquiryImages(inquiryId, files) {
+  const body = new FormData();
+  body.append("inquiryId", String(inquiryId));
+  files.forEach((file) => body.append("images[]", file, file.name));
+  const payload = await apiUpload("inquiry-images", body);
+  return payload.data;
+}
+
+export async function deleteInquiryImage(imageId) {
+  await apiDelete("inquiry-images", { imageId });
 }

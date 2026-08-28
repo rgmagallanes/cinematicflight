@@ -9,11 +9,12 @@ async function readJson(response) {
   return payload;
 }
 
-async function request(action, options = {}) {
+async function request(action, options = {}, params = {}) {
   const headers = { Accept: "application/json", ...(options.headers || {}) };
-  if (options.body) headers["Content-Type"] = "application/json";
+  if (options.body && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
   if (csrfToken && options.method && options.method !== "GET") headers["X-CSRF-Token"] = csrfToken;
-  const response = await fetch(`/api/index.php?action=${encodeURIComponent(action)}`, { credentials: "same-origin", ...options, headers });
+  const search = new URLSearchParams({ action, ...params });
+  const response = await fetch(`/api/index.php?${search}`, { credentials: "same-origin", ...options, headers });
   return readJson(response);
 }
 
@@ -43,10 +44,18 @@ export async function logout() {
   csrfToken = "";
 }
 
-export async function apiGet(action) {
-  return request(action);
+export async function apiGet(action, params) {
+  return request(action, {}, params);
 }
 
 export async function apiPost(action, body) {
   return request(action, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function apiUpload(action, formData) {
+  return request(action, { method: "POST", body: formData });
+}
+
+export async function apiDelete(action, body) {
+  return request(action, { method: "DELETE", body: JSON.stringify(body) });
 }
