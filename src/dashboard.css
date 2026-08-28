@@ -223,17 +223,37 @@
 .client-image-empty { margin: 16px 0 0; padding: 18px 0; color: #59675e; border-bottom: 1px solid rgba(20, 32, 25, 0.13); font-size: 0.68rem; }
 .client-image-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 17px; }
 .client-image-grid article { min-width: 0; border-bottom: 1px solid rgba(20, 32, 25, 0.16); }
-.client-image-grid article > a { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; background: #dcd7cd; }
+.client-image-open { position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; overflow: hidden; background: #dcd7cd; border: 0; cursor: zoom-in; }
 .client-image-grid img { width: 100%; height: 100%; object-fit: cover; transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1); }
-.client-image-grid a:hover img { transform: scale(1.035); }
+.client-image-open:hover img { transform: scale(1.035); }
 .client-image-view { position: absolute; right: 7px; bottom: 7px; display: inline-flex; align-items: center; gap: 5px; padding: 6px 7px; color: var(--dashboard-paper-light); background: rgba(7, 17, 13, 0.88); font-size: 0.61rem; font-weight: 700; }
 .client-image-grid article > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; }
 .client-image-grid article > div > span { display: grid; min-width: 0; gap: 2px; }
 .client-image-grid article strong { overflow: hidden; color: #354239; font-size: 0.66rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .client-image-grid article small { color: #59675e; font-size: 0.62rem; }
-.client-image-grid button { display: grid; flex: 0 0 auto; width: 32px; height: 32px; place-items: center; color: #7b5b38; background: transparent; border: 0; cursor: pointer; }
-.client-image-grid button:hover { color: #934b3c; background: rgba(147, 75, 60, 0.08); }
-.client-image-grid button:disabled { opacity: 0.45; cursor: wait; }
+.client-image-grid article > div > button { display: grid; flex: 0 0 auto; width: 32px; height: 32px; place-items: center; color: #7b5b38; background: transparent; border: 0; cursor: pointer; }
+.client-image-grid article > div > button:hover { color: #934b3c; background: rgba(147, 75, 60, 0.08); }
+.client-image-grid article > div > button:disabled { opacity: 0.45; cursor: wait; }
+
+.client-gallery-backdrop { position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; color: var(--dashboard-paper-light); background: rgba(4, 11, 8, 0.97); }
+.client-gallery { display: grid; grid-template-rows: 74px minmax(0, 1fr) 58px; width: 100%; height: 100%; }
+.client-gallery > header { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 0 clamp(20px, 4vw, 58px); border-bottom: 1px solid rgba(238, 233, 223, 0.18); }
+.client-gallery > header > span { display: grid; gap: 3px; }
+.client-gallery > header strong { color: var(--dashboard-paper-light); font-family: "Bodoni Moda", Georgia, serif; font-size: 1.15rem; font-weight: 400; }
+.client-gallery > header small { color: var(--dashboard-sage); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.client-gallery > header button { display: grid; width: 42px; height: 42px; place-items: center; color: var(--dashboard-paper-light); background: transparent; border: 1px solid rgba(238, 233, 223, 0.35); cursor: pointer; }
+.client-gallery-stage { display: grid; grid-template-columns: 68px minmax(0, 1fr) 68px; min-height: 0; align-items: center; gap: clamp(12px, 2vw, 32px); padding: clamp(18px, 3vw, 38px) clamp(18px, 4vw, 58px); }
+.client-gallery-stage > button { display: grid; width: 52px; height: 52px; place-items: center; color: var(--dashboard-paper-light); background: transparent; border: 1px solid rgba(238, 233, 223, 0.34); cursor: pointer; }
+.client-gallery-stage > button:last-child { justify-self: end; }
+.client-gallery-stage > button:disabled { opacity: 0.28; cursor: default; }
+.client-gallery-stage figure { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-width: 0; height: 100%; margin: 0; overflow: hidden; }
+.client-gallery-stage figure > img { width: 100%; height: 100%; min-height: 0; object-fit: contain; }
+.client-gallery-stage figcaption { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding-top: 13px; }
+.client-gallery-stage figcaption strong { overflow: hidden; color: var(--dashboard-paper-light); font-size: 0.72rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.client-gallery-stage figcaption span { flex: 0 0 auto; color: var(--dashboard-sage); font-size: 0.65rem; }
+.client-gallery > footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 clamp(20px, 4vw, 58px); color: var(--dashboard-sage); border-top: 1px solid rgba(238, 233, 223, 0.18); }
+.client-gallery > footer span { color: var(--dashboard-brass); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.client-gallery > footer small { font-size: 0.64rem; }
 
 /* Property Files — approved cabinet + reading desk + document journey hybrid */
 .dashboard-main.is-property-files { height: 100vh; padding: 0; overflow: hidden; }
@@ -550,6 +570,16 @@
   .inquiry-workflow-fields { grid-template-columns: 1fr; }.inquiry-workflow-fields .is-wide { grid-column: auto; }.inquiry-dialog-actions { align-items: stretch; flex-direction: column; }.inquiry-dialog-actions .text-action { min-height: 40px; }
   .client-image-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .client-image-drop { min-height: 88px; }
+  .client-gallery { grid-template-rows: 68px minmax(0, 1fr) 54px; }
+  .client-gallery > header { padding-inline: 18px; }
+  .client-gallery-stage { position: relative; grid-template-columns: 1fr; padding: 18px 18px 82px; }
+  .client-gallery-stage figure { grid-row: 1; grid-column: 1; }
+  .client-gallery-stage > button { position: absolute; z-index: 2; bottom: 18px; width: 48px; height: 48px; }
+  .client-gallery-stage > button:first-child { left: 18px; }
+  .client-gallery-stage > button:last-child { right: 18px; }
+  .client-gallery-stage figcaption { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .client-gallery > footer { padding-inline: 18px; }
+  .client-gallery > footer small { display: none; }
   .win-trophy-stage { min-height: 230px; }
   .studio-login { padding: 18px; }.studio-login-panel { padding: 32px 24px; }.studio-login-panel > img { margin-bottom: 38px; }
 }

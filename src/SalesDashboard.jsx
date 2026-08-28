@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { deleteInquiryImage, loadInquiries, loadInquiryImages, loadPropertyFiles, saveInquiry, savePropertyFiles, seedInquiries, uploadInquiryImages } from "./lib/studioData.js";
 import {
   ArrowLeft,
@@ -576,7 +577,11 @@ function imageSizeLabel(bytes) {
 function ClientImageAttachments({ inquiry, cloudUser }) {
   const [images, setImages] = useState([]);
   const [state, setState] = useState({ status: cloudUser ? "loading" : "idle", message: "" });
+  const [galleryIndex, setGalleryIndex] = useState(null);
+  const galleryOpen = galleryIndex !== null;
   const temporaryUrls = useRef([]);
+  const galleryElement = useRef(null);
+  const galleryTrigger = useRef(null);
 
   useEffect(() => {
     if (!cloudUser) return undefined;
@@ -588,6 +593,40 @@ function ClientImageAttachments({ inquiry, cloudUser }) {
   }, [cloudUser, inquiry.id]);
 
   useEffect(() => () => temporaryUrls.current.forEach((url) => URL.revokeObjectURL(url)), []);
+
+  useEffect(() => {
+    if (galleryIndex === null) return undefined;
+    const controlGallery = (event) => {
+      if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setGalleryIndex(null); }
+      if (event.key === "ArrowLeft") { event.preventDefault(); setGalleryIndex((current) => (current - 1 + images.length) % images.length); }
+      if (event.key === "ArrowRight") { event.preventDefault(); setGalleryIndex((current) => (current + 1) % images.length); }
+      if (event.key === "Tab") {
+        const controls = Array.from(galleryElement.current?.querySelectorAll('button:not([disabled])') || []);
+        if (!controls.length) return;
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    };
+    window.addEventListener("keydown", controlGallery, true);
+    return () => window.removeEventListener("keydown", controlGallery, true);
+  }, [galleryIndex, images.length]);
+
+  useEffect(() => {
+    if (galleryIndex === null) return undefined;
+    const enquiryDialog = document.querySelector(".inquiry-dialog");
+    const previousOverflow = document.body.style.overflow;
+    enquiryDialog?.setAttribute("inert", "");
+    document.body.style.overflow = "hidden";
+    const focusFrame = window.requestAnimationFrame(() => galleryElement.current?.querySelector("button")?.focus());
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      enquiryDialog?.removeAttribute("inert");
+      document.body.style.overflow = previousOverflow;
+      window.requestAnimationFrame(() => galleryTrigger.current?.focus());
+    };
+  }, [galleryOpen]);
 
   const addFiles = async (fileList) => {
     const files = Array.from(fileList || []);
@@ -629,6 +668,8 @@ function ClientImageAttachments({ inquiry, cloudUser }) {
   };
 
   const busy = state.status === "uploading" || state.status === "deleting" || state.status === "loading";
+  const galleryImage = galleryIndex === null ? null : images[galleryIndex];
+  const moveGallery = (direction) => setGalleryIndex((current) => (current + direction + images.length) % images.length);
   return (
     <section className="client-image-attachments" aria-labelledby="client-images-title">
       <header>
@@ -642,11 +683,22 @@ function ClientImageAttachments({ inquiry, cloudUser }) {
       </label>
       {state.message && <p className={`client-image-message ${state.status === "error" ? "is-error" : ""}`} role="status">{state.message}</p>}
       {images.length > 0 ? <div className="client-image-grid">
-        {images.map((image) => <article key={image.id}>
-          <a href={image.url} target="_blank" rel="noreferrer" aria-label={`Open ${image.name} full size`}><img src={image.url} alt="" loading="lazy" /><span className="client-image-view">View full size <ArrowSquareOut size={13} /></span></a>
+        {images.map((image, index) => <article key={image.id}>
+          <button className="client-image-open" type="button" onClick={(event) => { galleryTrigger.current = event.currentTarget; setGalleryIndex(index); }} aria-label={`View ${image.name} in gallery`}><img src={image.url} alt="" loading="lazy" /><span className="client-image-view">View gallery <ArrowSquareOut size={13} /></span></button>
           <div><span><strong title={image.name}>{image.name}</strong><small>{imageSizeLabel(image.byteSize)}{image.local ? " · Preview" : ""}</small></span><button type="button" onClick={() => removeImage(image)} disabled={busy} aria-label={`Remove ${image.name}`}><Trash size={16} /></button></div>
         </article>)}
       </div> : state.status !== "loading" && <p className="client-image-empty">No client images attached yet.</p>}
+      {galleryImage && createPortal(<div className="client-gallery-backdrop" data-client-gallery="open" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setGalleryIndex(null); }}>
+        <div className="client-gallery" ref={galleryElement} role="dialog" aria-modal="true" aria-labelledby="client-gallery-title">
+          <header><span><strong id="client-gallery-title">{inquiry.property}</strong><small>Client image gallery</small></span><button type="button" onClick={() => setGalleryIndex(null)} aria-label="Close image gallery"><X size={22} /></button></header>
+          <div className="client-gallery-stage">
+            <button type="button" onClick={() => moveGallery(-1)} disabled={images.length < 2} aria-label="Previous image"><ArrowLeft size={24} /></button>
+            <figure><img src={galleryImage.url} alt={`${inquiry.property} client image: ${galleryImage.name}`} /><figcaption><strong>{galleryImage.name}</strong><span>{imageSizeLabel(galleryImage.byteSize)}{galleryImage.local ? " · Preview" : ""}</span></figcaption></figure>
+            <button type="button" onClick={() => moveGallery(1)} disabled={images.length < 2} aria-label="Next image"><ArrowRight size={24} /></button>
+          </div>
+          <footer><span aria-live="polite">{galleryIndex + 1} of {images.length}</span><small>Use the arrow keys to move between images</small></footer>
+        </div>
+      </div>, document.body)}
     </section>
   );
 }
@@ -719,7 +771,7 @@ export function SalesDashboard({ cloudUser = null, onSignOut = null }) {
     document.title = `${title} — ${productName}`;
   }, [title]);
   useEffect(() => {
-    const close = (event) => { if (event.key === "Escape") { setSelectedInquiry(null); setAdding(false); } };
+    const close = (event) => { if (event.key === "Escape" && !document.querySelector('[data-client-gallery="open"]')) { setSelectedInquiry(null); setAdding(false); } };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
   }, []);
