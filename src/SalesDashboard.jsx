@@ -561,7 +561,10 @@ export function SalesDashboard() {
   const [adding, setAdding] = useState(false);
   const title = useMemo(() => navItems.find((item) => item.id === activeView)?.label, [activeView]);
 
-  useEffect(() => { document.title = `${title} — Cinematic Flight`; }, [title]);
+  useEffect(() => {
+    const productName = import.meta.env.VITE_APP_MODE === "studio" ? "Cinematic Flight Studio" : "Cinematic Flight";
+    document.title = `${title} — ${productName}`;
+  }, [title]);
   useEffect(() => {
     const close = (event) => { if (event.key === "Escape") { setSelectedInquiry(null); setAdding(false); } };
     window.addEventListener("keydown", close);

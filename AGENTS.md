@@ -19,6 +19,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 ## Sales dashboard direction
 
 - Name the private application **Cinematic Flight Studio** and use `studio.cinematicflight.com` as its intended production address. Keep it distinct from the public Cinematic Flight marketing website.
+- Build the Hostinger Studio artifact with the committed `.env.studio` app mode so the dashboard renders directly at the subdomain root without an HTTP redirect; keep the ordinary production build serving the public marketing experience at `/`.
 - Use the selected “Owner’s Daily Flight Deck” image mockup as the source of truth for the private sales dashboard.
 - Keep the dashboard separate from the public marketing experience at `/dashboard`.
 - Lead with today’s enquiry work, reach and reply health, recent enquiries, and the next best action; keep the document workspace available without letting it compete with the daily sales view.
