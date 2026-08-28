@@ -27,9 +27,10 @@ Cinematic Flight creates property websites and produces a cinematic view of the 
 ## Primary actions
 
 - Enter and experience the cinematic journey.
+- Recognise the gap between the place and its current website.
 - Understand the service in one clear sentence.
 - View the photographic proof.
-- Discuss a property through the enquiry flow.
+- Request a reading of the property's existing photographs through the enquiry flow.
 
 ## Accessibility and performance commitments
 

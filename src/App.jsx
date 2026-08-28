@@ -374,7 +374,7 @@ function InquiryForm() {
           </label>
         );
       })}
-      <button className="submit-button field-wide" type="submit">Discuss your property</button>
+      <button className="submit-button field-wide" type="submit">Ask for the reading</button>
       <small className="field-wide form-note">Prototype only — no details are sent or stored.</small>
     </form>
   );
@@ -384,6 +384,79 @@ export function App() {
   return (
     <main id="top">
       <FlightHero />
+
+      <section className="problem-section">
+        <h2>Your place is better than your website.</h2>
+        <div className="problem-copy">
+          <p>
+            Most property websites were built to list rooms and rates. They present a place the way a catalogue does — a grid of thumbnails in a layout a hundred other properties are already using.
+          </p>
+          <p className="problem-turn">
+            The photographs are usually good. It is the website that flattens them.
+          </p>
+          <p>
+            Someone choosing where to stay is trying to feel a place before they commit to it. A gallery asks them to imagine it instead.
+          </p>
+        </div>
+
+        <figure className="flattening">
+          <div className="flattening-run">
+            {[0, 1, 2, 3, 4].map((step) => (
+              <div className="flattening-step" key={step} style={{ "--step": step }}>
+                <picture>
+                  <source srcSet="/assets/property/good-food-farm-overview-1778.avif" type="image/avif" />
+                  <img
+                    src="/assets/property/good-food-farm-overview-1778.png"
+                    alt={step === 0 ? "Good Food Farm seen in full" : ""}
+                    loading="lazy"
+                  />
+                </picture>
+              </div>
+            ))}
+          </div>
+          <figcaption>The same view, reduced step by step to fit a template.</figcaption>
+        </figure>
+      </section>
+
+      <section className="contrast-section">
+        <div className="contrast-heading">
+          <h2>One set of photographs. Two outcomes.</h2>
+          <p>The same Good Food Farm images, treated two ways.</p>
+        </div>
+
+        <div className="contrast-pair">
+          <article className="contrast-side">
+            <h3>As a gallery</h3>
+            <div className="contrast-gallery" aria-label="The same photographs shown as a conventional thumbnail grid">
+              {[1, 2, 3, 4, 5, 6].map((number) => (
+                <img
+                  key={number}
+                  src={`/assets/flight/poster${number}.jpg`}
+                  alt=""
+                  loading="lazy"
+                />
+              ))}
+            </div>
+            <p>Thumbnails in a grid. The visitor scans, compares, and leaves to compare somewhere else.</p>
+          </article>
+
+          <article className="contrast-side">
+            <h3>As a flight</h3>
+            <div className="contrast-flight" aria-label="The same photographs given depth and sequence">
+              {[1, 3, 5].map((number, index) => (
+                <figure key={number} style={{ "--depth": 2 - index }}>
+                  <img src={`/assets/flight/poster${number}.jpg`} alt="" loading="lazy" />
+                </figure>
+              ))}
+            </div>
+            <p>The same images, given depth and sequence. The visitor moves through the property instead of scanning it.</p>
+          </article>
+        </div>
+
+        <p className="contrast-note">
+          Nothing was re-shot. The difference is what the website does with the material.
+        </p>
+      </section>
 
       <section className="offer-section" id="offer">
         <header className="creation-heading">
@@ -463,7 +536,7 @@ export function App() {
 
         <div className="offer-close">
           <p>Designed for desktop and mobile</p>
-          <a className="solid-action" href="#contact">Discuss your property</a>
+          <a className="solid-action" href="#contact">See what your property would look like</a>
         </div>
       </section>
 
@@ -507,13 +580,17 @@ export function App() {
             <li><strong>We read the material</strong><span>Whether the imagery can carry a convincing journey, answered before anything is built.</span></li>
             <li><strong>Gaps are named</strong><span>If a view is missing, we say which one, rather than commissioning a production around it.</span></li>
           </ol>
+          <div className="method-offer">
+            <p>That reading is where every project starts, and it costs you nothing to ask for it.</p>
+            <a className="solid-action" href="#contact">Ask what your photographs can do</a>
+          </div>
         </div>
       </section>
 
       <section className="contact-section" id="contact">
         <div className="contact-copy">
-          <h2>Begin with the place.</h2>
-          <p>Share the property and the photographs you have. We’ll start with whether the journey is possible.</p>
+          <h2>Start with a reading.</h2>
+          <p>Send the property and the photographs you already have. We’ll tell you whether they can carry a flight, and what it would take — before anything is designed or agreed.</p>
         </div>
         <InquiryForm />
       </section>

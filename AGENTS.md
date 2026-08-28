@@ -16,6 +16,19 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Keep information restrained. The experience should demonstrate the offer; method detail belongs farther down or on a separate page.
 - Preserve the existing Good Food Farm project outside this prototype folder.
 
+## Sales dashboard direction
+
+- Name the private application **Cinematic Flight Studio** and use `studio.cinematicflight.com` as its intended production address. Keep it distinct from the public Cinematic Flight marketing website.
+- Use the selected “Owner’s Daily Flight Deck” image mockup as the source of truth for the private sales dashboard.
+- Keep the dashboard separate from the public marketing experience at `/dashboard`.
+- Lead with today’s enquiry work, reach and reply health, recent enquiries, and the next best action; keep the document workspace available without letting it compete with the daily sales view.
+- Preserve the restrained forest-night, mineral-paper, botanical-ink, and scarce quiet-brass system; use Bodoni Moda only for editorial moments and the existing Avenir/Futura stack for operational UI.
+- Keep the initial dashboard explicitly local and owner-facing. Do not imply live email, CRM, cloud storage, or customer-data integrations until they are connected and verified.
+- For Property Files, use the approved hybrid direction: lead-linked folders and document navigation from the first concept, the focused editorial reading desk from the second, and the quiet Material received → Reading in progress → Proposal → Sent sequence from the third.
+- Keep the property reading editor dominant; directory, enquiry context, source files, version status, and next sales action are supporting rails rather than equal-weight panels.
+- Let Property Files import DOCX, text, Markdown, CSV, and Excel files locally and convert their contents into editable working documents. Accept public or published Google Sheets links without implying private Google account access; private sheets require an explicit future OAuth integration.
+- Imported documents must open in a focused reading layout rather than a compressed editor: expand content to its full readable height, use at least 16px body text on compact screens, and collapse the property cabinet behind an explicit Property Files control while reading.
+
 ## Audit refinement decisions
 
 - Keep the immersive opening, but state the service in plain language within the first viewport and provide a visible route to the commercial explanation.
@@ -37,3 +50,13 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - State the existing-website-or-complete-rebuild choice once only, in the approved `#offer` delivery choice; the post-proof method section must not restate it.
 - Use the post-proof method section to answer the owner's first objection — whether new photography is required — rather than repeating the creation process already covered in `#offer`.
 - Keep that answer qualitative and within prototype truth: the property's existing photographs are the material, suitability is assessed before anything is built, and missing views are named rather than commissioned as a production.
+
+## Conversion decisions
+
+- Open the commercial argument by naming the gap before showing the method: the page previously ran solution-first and gave a visitor nothing to recognise themselves in.
+- Use `PRODUCT.md`'s own audience insight — owners whose website does not communicate the quality of the place — as the visible problem statement, not just internal positioning.
+- Demonstrate the difference with the client's own material rather than a competitor's site: the same Good Food Farm photographs shown as a conventional gallery beside the same photographs given depth and sequence. Never fabricate or screenshot a real property's existing website as a "before".
+- Lead the enquiry with the free reading of the client's photographs rather than with a request for their material; the assessment was previously buried as process step 02.
+- Keep persuasion in the argument, not in the visual volume. The restrained system is the brand; a louder treatment was tried and rejected.
+- Illustrate the problem section with "the flattening": one verified property photograph shown in five steps, each shorter and more drained than the last, ending as an inert strip. It depicts the loss the copy names; the comparison of gallery against flight belongs to the following section and must not be repeated here.
+- Do not introduce AI-generated or illustrated imagery anywhere on this site. The offer rests on real photographs of the real place, and synthetic imagery would undercut it.

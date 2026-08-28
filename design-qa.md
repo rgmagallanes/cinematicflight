@@ -1,51 +1,80 @@
-# Cinematic Flight design QA
+# Cinematic Flight Property Files design QA
 
 ## Comparison target
 
-- Source visual truth: `/Users/richard/Downloads/Codex Image Aug 27, 2026, 10_18_12 AM.png`, specifically the warm-paper “How the experience is created” section.
-- Desktop implementation: `/Users/richard/Documents/goodfoodfarm/property-flight-site/qa/visual-explanation-desktop.png`.
-- Mobile implementation: `/Users/richard/Documents/goodfoodfarm/property-flight-site/qa/visual-explanation-mobile.png`.
-- Normalized source crop: `/Users/richard/Documents/goodfoodfarm/property-flight-site/qa/reference-explanation-crop.png`.
-- Full-view comparison evidence: `/Users/richard/Documents/goodfoodfarm/property-flight-site/qa/visual-explanation-comparison.png`.
+- Source visual truth: `/Users/richard/Documents/cinematicflight/qa/design-reference-property-files-hybrid.png`.
+- Normalized source: `/Users/richard/Documents/cinematicflight/qa/design-reference-property-files-hybrid-1440x1024.png`.
+- Final browser-rendered implementation: `/Users/richard/Documents/cinematicflight/qa/implementation-property-files-final.png`.
+- Final side-by-side evidence: `/Users/richard/Documents/cinematicflight/qa/design-qa-property-files-final.png`.
 
-## Viewports and normalization
+## Viewport and normalization
 
-- Source image: 864 × 1821 pixels; explanation region cropped from y=905 to 864 × 916 and scaled proportionally to 1132 × 1200.
-- Desktop implementation: 1440 × 1200 CSS pixels and 1440 × 1200 screenshot output.
-- Mobile implementation: 390 × 844 CSS pixels and 390 × 844 screenshot output.
-- State: `#offer`, aligned to the top of the viewport after smooth-scroll completion.
-- Density: the source crop and implementation were normalized to the same 1200-pixel comparison height; the side-by-side comparison is 2572 × 1200.
+- Source image: 1487 × 1058 pixels, normalized to 1440 × 1024 for direct comparison.
+- Implementation: 1440 × 1024 CSS pixels at device density 1.
+- Side-by-side comparison: 2880 × 1024 pixels.
+- State: Property Files, The Banyan Estate, Property reading, Draft version 1.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: the implementation preserves the source’s high-contrast editorial heading and compact tracked stage labels through the existing Bodoni Moda and Avenir/Futura stacks. The larger heading scale is an intentional continuation of the approved Cinematic Flight system.
-- Spacing and layout rhythm: the centered heading, three equal desktop stages, generous warm-paper field, and closing delivery choice follow the source composition. At 390 pixels the stages become a single readable visual sequence with no horizontal overflow.
-- Colors and visual tokens: warm mineral paper, botanical ink, and restrained brass markers remain consistent with both the reference and the existing site. The implementation omits decorative texture to preserve the current flat-by-material design rule.
-- Image quality and asset fidelity: every visual uses verified Good Food Farm photography already supplied by the project. Stage one presents the photographs as a loose print stack; stage two orders the same material into scenes; stage three places the journey inside a responsive website preview. No placeholder or synthetic property image is used.
-- Copy and content: the three source messages are retained: “Your photographs,” “The cinematic flight,” and “Added to your website.” The closing choice clearly distinguishes adding the experience to a current website from building a complete new experience.
+- Layout: the implementation preserves the selected four-part anatomy: forest-night primary navigation, lead-linked property cabinet, dominant editorial reading desk, and a supporting sales-context rail.
+- Hierarchy: the property name and document journey sit above a quiet formatting bar; the reading title and three editable sections remain the primary work surface; sales actions are restrained at the bottom.
+- Typography: Bodoni Moda carries property and document titles while the existing Avenir/Futura stack carries operational labels, controls, file metadata, and status copy.
+- Tokens: mineral paper, botanical ink, muted sage, forest night, scarce quiet brass, and hairline separators match the approved dashboard system.
+- Assets: the approved transparent Cinematic Flight logo is reused directly. The selected screen requires no property photography, so no synthetic imagery or placeholder raster assets were introduced. Interface symbols use Phosphor Icons.
+- Content: source-material filenames remain references to local property files; the prototype does not imply cloud storage, CRM synchronization, live email, or a production document backend.
 
-## Interaction and browser verification
+## Functional verification
 
-- “The service” navigation reached the explanation section.
-- “Discuss your property” reached `#contact` and aligned the enquiry section to the viewport.
-- Desktop and mobile renders had zero horizontal overflow.
-- Browser console warnings and errors: none.
-- Production build passed and all four Sites worker tests passed.
+- Switching from The Banyan Estate to Riverstone Lodge updates the property, source material, document set, progress, and sales context.
+- “Back to all files” opens the cross-property library and returns to the active reading.
+- Editing document content updates the local working copy; the test content was restored.
+- “Save version” advanced the test-origin document to version 2 and showed a local-save status.
+- “Mark reading ready” updated the test-origin reading to Ready.
+- “View enquiry” opened and closed the linked enquiry panel.
+- “View in pipeline” navigated to the pipeline view.
+- A fresh interaction-test tab reported no console warnings or errors.
+- The final 1440 × 1024 view has no horizontal or vertical page overflow.
 
 ## Comparison history
 
 ### Pass 1
 
-- No actionable P0, P1, or P2 mismatch remained after the first normalized comparison.
-- Intentional adaptations: square image and preview geometry instead of the reference’s rounded frames; existing typography and flat material treatment instead of introducing a new visual system; text-only delivery choice instead of approximate device icon drawings.
+- Evidence: `/Users/richard/Documents/cinematicflight/qa/design-qa-property-files-pass-1.png`.
+- [P2] The reading content ended too early, leaving the action row materially higher than the reference. Fixed by restoring the source’s deliberate lower-page whitespace and anchoring the actions at the viewport bottom.
+- [P2] The action footer inherited the public site’s dark footer treatment. Fixed with an explicit mineral-paper workspace footer and brass primary action.
+- [P2] The document-journey header was approximately 50 pixels shallower than the selected mockup. Fixed by matching its vertical breathing room while preserving the progress position.
 
-## Focused comparison
+### Final pass
 
-- A separate focused crop was unnecessary because the normalized side-by-side evidence keeps the stage labels, photographs, website preview, and delivery choice readable at the same time.
+- Evidence: `/Users/richard/Documents/cinematicflight/qa/design-qa-property-files-final.png`.
+- The normalized comparison shows matching major-region proportions, header depth, reading-title position, section sequence, lower-page whitespace, action placement, and contextual-rail density.
+- No actionable P0, P1, or P2 difference remains.
+
+## Build verification
+
+- `npm run build`: passed; generated `dist/client/index.html`, `dist/server/index.js`, and `dist/.openai/hosting.json`.
+- `npm run test:sites`: passed, 4 tests and 0 failures.
+- `git diff --check`: passed.
 
 ## Follow-up polish
 
-- P3: real iOS Safari scroll-video behavior remains a publication verification task outside this explanation-section change.
-- P3: the prototype enquiry must be connected to an approved endpoint before publication.
+- P3: the local prototype stores document edits and versions in browser local storage. Shared folders, authentication, permissions, file upload, and durable server-side revision history remain future integrations.
+- P3: compact breakpoint rules are implemented for a stacked cabinet, editor, and context rail; the approved mockup and current fidelity gate are desktop-first.
+
+## Import workflow extension
+
+- Final compact-browser evidence: `/Users/richard/Documents/cinematicflight/qa/implementation-property-import-final.png` at 745 × 791 CSS pixels.
+- The compact importer has no horizontal overflow (`innerWidth: 745`, `scrollWidth: 745`) and collapses the folder tree while importing so the file controls remain immediately reachable.
+- A TXT file was imported through the browser file chooser, converted into an editable document, persisted under the selected property, and verified with its complete text intact.
+- Invalid Google Sheets links produce a persistent, actionable inline error. Public/published Google Sheets links are supported; private account access is explicitly not implied.
+- Word and spreadsheet parsers are loaded only after the relevant import action, keeping the initial dashboard bundle near its previous size.
+- The Impeccable detector reported advisory design-token drift across the existing dashboard stylesheet but no new blocking interface anti-pattern.
+
+## Imported-document reading refinement
+
+- Compact reading evidence: `/Users/richard/Documents/cinematicflight/qa/implementation-imported-reading-compact.png` at 745 pixels wide.
+- Imported document text now renders at 16px with a 28.48px line height in the compact browser and expands to the document’s complete scroll height instead of clipping inside a fixed textarea.
+- The property cabinet collapses while reading and returns through a 44-pixel Property Files control; opening the cabinet and selecting the document again were browser-tested.
+- The compact reader reported `scrollWidth: 745` at `innerWidth: 745`, with no console warnings or errors.
 
 final result: passed

@@ -427,6 +427,235 @@ footer a:hover { text-decoration-color: currentColor; }
 
 .load-note.is-ready { opacity: 0; }
 
+/* The commercial argument opens by naming the gap the service closes, then
+   shows that gap in the client's own material before explaining the method. */
+.problem-section {
+  position: relative;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-areas:
+    "heading copy"
+    "figure  figure";
+  align-items: start;
+  gap: clamp(2.75rem, 6vw, 5rem) clamp(2rem, 6vw, 6rem);
+  padding: clamp(7rem, 13vw, 12rem) var(--gutter);
+  color: var(--ink);
+  background: var(--paper-deep);
+}
+
+.problem-section h2 {
+  grid-area: heading;
+  max-width: 12ch;
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(3.5rem, 7.2vw, 6rem);
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+}
+
+.problem-copy {
+  grid-area: copy;
+  display: grid;
+  gap: 1.6rem;
+  max-width: 38rem;
+}
+
+.problem-copy p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+
+/* The turn of the argument, given the editorial voice. */
+.problem-copy .problem-turn {
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--brass-ink);
+  font-family: var(--display);
+  font-size: clamp(1.35rem, 2.3vw, 2.15rem);
+  line-height: 1.35;
+}
+
+.contrast-section {
+  padding: clamp(7rem, 13vw, 12rem) var(--gutter);
+  color: var(--paper);
+  background: var(--night);
+}
+
+.contrast-heading {
+  display: grid;
+  gap: 1.1rem;
+  max-width: 44rem;
+  margin-bottom: clamp(3rem, 6vw, 5rem);
+}
+
+.contrast-heading h2 {
+  max-width: 16ch;
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(3rem, 5.2vw, 4.75rem);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+}
+
+.contrast-heading p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: #aab6ad;
+}
+
+.contrast-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(2rem, 5vw, 4.5rem);
+}
+
+.contrast-side {
+  display: grid;
+  gap: 1.25rem;
+  align-content: start;
+}
+
+.contrast-side h3 {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  color: #d0a25b;
+}
+
+.contrast-side > p {
+  margin: 0;
+  max-width: 30rem;
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: #aab6ad;
+}
+
+/* The category default: uniform, small, and deliberately inert. */
+.contrast-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(245, 240, 229, 0.16);
+}
+
+.contrast-gallery img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  filter: saturate(0.55) brightness(0.82);
+}
+
+/* The same frames given depth and sequence. */
+.contrast-flight {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid rgba(245, 240, 229, 0.16);
+}
+
+/* Frames recede up and to the right, so the sequence is legible as depth
+   rather than as a pile: the nearest frame is whole, the rest fall behind it. */
+.contrast-flight figure {
+  position: absolute;
+  left: 5%;
+  bottom: 7%;
+  width: 66%;
+  margin: 0;
+  transform-origin: bottom left;
+  transform:
+    translate(calc(var(--depth) * 21%), calc(var(--depth) * -19%))
+    scale(calc(1 - var(--depth) * 0.07));
+  opacity: calc(1 - var(--depth) * 0.26);
+  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.contrast-flight img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  outline: 1px solid rgba(7, 17, 13, 0.65);
+}
+
+.contrast-section:hover .contrast-flight figure {
+  transform:
+    translate(calc(var(--depth) * 25%), calc(var(--depth) * -22%))
+    scale(calc(1 - var(--depth) * 0.05));
+}
+
+.contrast-note {
+  max-width: 38rem;
+  margin: clamp(2.5rem, 5vw, 4rem) 0 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(245, 240, 229, 0.18);
+  font-family: var(--display);
+  font-size: clamp(1.35rem, 2.3vw, 2.15rem);
+  line-height: 1.4;
+}
+
+.method-offer {
+  display: grid;
+  justify-items: start;
+  gap: 1.25rem;
+  padding-top: 1.75rem;
+}
+
+.method-offer p {
+  margin: 0;
+  max-width: 32rem;
+  font-size: 0.78rem;
+  line-height: 1.65;
+}
+
+
+.flattening {
+  grid-area: figure;
+  margin: 0;
+  display: grid;
+  gap: 1.1rem;
+}
+
+.flattening-run {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: end;
+  gap: 3px;
+  height: clamp(8rem, 17vw, 14rem);
+}
+
+.flattening-step {
+  overflow: hidden;
+  height: calc(100% - var(--step) * 21%);
+  filter:
+    saturate(calc(1 - var(--step) * 0.22))
+    brightness(calc(1 - var(--step) * 0.1))
+    contrast(calc(1 - var(--step) * 0.06));
+}
+
+.flattening-step picture,
+.flattening-step img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.flattening-step img { object-fit: cover; }
+
+.flattening figcaption {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: rgba(20, 32, 25, 0.72);
+}
+
 .offer-section {
   position: relative;
   z-index: 8;
@@ -995,7 +1224,15 @@ footer a:last-child { justify-self: end; }
 @media (max-width: 900px) {
   .proof-heading,
   .method-section,
+  .problem-section,
   .contact-section { grid-template-columns: 1fr; }
+  .contrast-pair { grid-template-columns: 1fr; }
+  .problem-section {
+    grid-template-areas:
+      "heading"
+      "copy"
+      "figure";
+  }
   .creation-stages {
     grid-template-columns: 1fr;
     max-width: 44rem;
@@ -1070,10 +1307,20 @@ footer a:last-child { justify-self: end; }
   .offer-section,
   .proof-section,
   .method-section,
+  .problem-section,
+  .contrast-section,
   .contact-section {
     padding-top: 6rem;
     padding-bottom: 6rem;
   }
+  .problem-section h2 { font-size: clamp(3.2rem, 15vw, 5rem); }
+  .contrast-gallery { gap: 0.25rem; }
+  .flattening-run {
+    grid-template-columns: repeat(3, 1fr);
+    height: clamp(6.5rem, 26vw, 9rem);
+  }
+  .flattening-step:nth-child(n + 4) { display: none; }
+  .flattening-step { height: calc(100% - var(--step) * 30%); }
   .contact-section {
     padding-top: 4.75rem;
     padding-bottom: 4.75rem;
