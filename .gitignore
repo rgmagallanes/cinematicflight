@@ -30,5 +30,8 @@ coverage/
 # Vite cache
 .vite/
 
+# Hostinger database credentials
+public/api/config.php
+
 # Full-bitrate camera exports; scripts/encode-flight-clips.mjs derives the web clips
 media-src/

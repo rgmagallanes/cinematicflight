@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { loadInquiries, loadPropertyFiles, saveInquiry, savePropertyFiles, seedInquiries } from "./lib/studioData.js";
 import {
   ArrowLeft,
   ArrowRight,
@@ -104,7 +105,7 @@ const pipelineSummary = [
   { stage: "Won", value: 1, note: "This period" },
 ];
 
-function Sidebar({ activeView, setActiveView }) {
+function Sidebar({ activeView, setActiveView, cloudUser, onSignOut }) {
   return (
     <aside className="dashboard-sidebar">
       <button className="dashboard-brand" type="button" onClick={() => setActiveView("home")} aria-label="Cinematic Flight dashboard home">
@@ -125,8 +126,9 @@ function Sidebar({ activeView, setActiveView }) {
         ))}
       </nav>
       <div className="private-note">
-        <div><LockSimple size={17} weight="bold" aria-hidden="true" /> Private workspace</div>
-        <p>This dashboard is for your eyes only.</p>
+        <div><LockSimple size={17} weight="bold" aria-hidden="true" /> {cloudUser ? "Cloud protected" : "Local workspace"}</div>
+        <p>{cloudUser ? cloudUser.email : "Demo data is stored only in this browser."}</p>
+        {cloudUser && <button type="button" onClick={onSignOut}>Sign out</button>}
       </div>
     </aside>
   );
@@ -311,7 +313,7 @@ function CalendarView({ inquiries, openInquiry }) {
   );
 }
 
-function PropertyFilesView({ inquiries, openInquiry, setActiveView }) {
+function PropertyFilesView({ inquiries, openInquiry, setActiveView, cloudUser }) {
   const [properties, setProperties] = useState(() => {
     try { return JSON.parse(localStorage.getItem("cinematic-flight-property-files-v1")) || initialPropertyFiles; } catch { return initialPropertyFiles; }
   });
@@ -324,6 +326,7 @@ function PropertyFilesView({ inquiries, openInquiry, setActiveView }) {
   const [compactFilesOpen, setCompactFilesOpen] = useState(true);
   const [sheetUrl, setSheetUrl] = useState("");
   const [importState, setImportState] = useState({ status: "idle", message: "" });
+  const [cloudReady, setCloudReady] = useState(false);
 
   const activeProperty = properties.find((property) => property.id === activePropertyId) || properties[0];
   const activeDocument = activeProperty?.documents.find((document) => document.id === activeDocumentId) || activeProperty?.documents[0];
@@ -331,6 +334,21 @@ function PropertyFilesView({ inquiries, openInquiry, setActiveView }) {
   const currentStep = activeDocument?.status === "Sent" ? 3 : activeDocument?.status === "Ready" ? 2 : 1;
 
   useEffect(() => { localStorage.setItem("cinematic-flight-property-files-v1", JSON.stringify(properties)); }, [properties]);
+  useEffect(() => {
+    if (!cloudUser) return undefined;
+    let active = true;
+    loadPropertyFiles(cloudUser.id).then(async (remote) => {
+      const next = remote.length ? remote : initialPropertyFiles;
+      if (!remote.length) await savePropertyFiles(cloudUser.id, initialPropertyFiles);
+      if (active) { setProperties(next); setCloudReady(true); }
+    }).catch((error) => { if (active) setToast(`Cloud files unavailable: ${error.message}`); });
+    return () => { active = false; };
+  }, [cloudUser]);
+  useEffect(() => {
+    if (!cloudUser || !cloudReady) return undefined;
+    const timer = window.setTimeout(() => savePropertyFiles(cloudUser.id, properties).catch((error) => setToast(`Cloud save failed: ${error.message}`)), 700);
+    return () => window.clearTimeout(timer);
+  }, [cloudReady, cloudUser, properties]);
   useEffect(() => {
     if (!toast) return undefined;
     const timer = window.setTimeout(() => setToast(""), 2200);
@@ -544,7 +562,7 @@ function PropertyFilesView({ inquiries, openInquiry, setActiveView }) {
 }
 
 function InquiryDialog({ inquiry, onClose, onUpdate }) {
-  const [form, setForm] = useState({ stage: inquiry.stage, next: inquiry.next, due: inquiry.due, actionStatus: inquiry.actionStatus || "Upcoming", note: `Review ${inquiry.property} and prepare the next response.` });
+  const [form, setForm] = useState({ stage: inquiry.stage, next: inquiry.next, due: inquiry.due, actionStatus: inquiry.actionStatus || "Upcoming", note: inquiry.note || `Review ${inquiry.property} and prepare the next response.` });
   if (!inquiry) return null;
   const save = (event) => {
     event.preventDefault();
@@ -594,7 +612,7 @@ function AddInquiryDialog({ onAdd, onClose }) {
   );
 }
 
-export function SalesDashboard() {
+export function SalesDashboard({ cloudUser = null, onSignOut = null }) {
   const [activeView, setActiveView] = useState("home");
   const [inquiries, setInquiries] = useState(() => {
     try { return JSON.parse(localStorage.getItem("cinematic-flight-inquiries-v1")) || initialInquiries; } catch { return initialInquiries; }
@@ -602,6 +620,7 @@ export function SalesDashboard() {
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [adding, setAdding] = useState(false);
   const [celebration, setCelebration] = useState(null);
+  const [cloudMessage, setCloudMessage] = useState("");
   const title = useMemo(() => navItems.find((item) => item.id === activeView)?.label, [activeView]);
 
   useEffect(() => {
@@ -614,28 +633,49 @@ export function SalesDashboard() {
     return () => window.removeEventListener("keydown", close);
   }, []);
   useEffect(() => { localStorage.setItem("cinematic-flight-inquiries-v1", JSON.stringify(inquiries)); }, [inquiries]);
+  useEffect(() => {
+    if (!cloudUser) return undefined;
+    let active = true;
+    loadInquiries(cloudUser.id).then(async (remote) => {
+      const next = remote.length ? remote : initialInquiries;
+      if (!remote.length) await seedInquiries(cloudUser.id, initialInquiries);
+      if (active) { setInquiries(next); setCloudMessage("Studio data synced"); }
+    }).catch((error) => { if (active) setCloudMessage(`Cloud sync unavailable: ${error.message}`); });
+    return () => { active = false; };
+  }, [cloudUser]);
+  useEffect(() => {
+    if (!cloudMessage) return undefined;
+    const timer = window.setTimeout(() => setCloudMessage(""), 3200);
+    return () => window.clearTimeout(timer);
+  }, [cloudMessage]);
 
   const updateInquiry = (updated) => {
     const previous = inquiries.find((item) => item.id === updated.id);
     setInquiries((current) => current.map((item) => item.id === updated.id ? updated : item));
+    if (cloudUser) saveInquiry(cloudUser.id, updated).catch((error) => setCloudMessage(`Cloud save failed: ${error.message}`));
     if (updated.stage === "Won" && previous?.stage !== "Won") setCelebration({ id: Date.now(), property: updated.property });
+  };
+  const addInquiry = (inquiry) => {
+    setInquiries((current) => [inquiry, ...current]);
+    if (cloudUser) saveInquiry(cloudUser.id, inquiry).catch((error) => setCloudMessage(`Cloud save failed: ${error.message}`));
   };
 
   const common = { inquiries, openInquiry: setSelectedInquiry, openAdd: () => setAdding(true) };
 
   return (
     <div className="sales-dashboard">
-      <Sidebar activeView={activeView} setActiveView={setActiveView} />
+      <Sidebar activeView={activeView} setActiveView={setActiveView} cloudUser={cloudUser} onSignOut={onSignOut} />
       <main className={`dashboard-main ${activeView === "documents" ? "is-property-files" : ""}`}>
         {activeView === "home" && <HomeView {...common} setActiveView={setActiveView} />}
         {activeView === "enquiries" && <EnquiriesView {...common} />}
         {activeView === "pipeline" && <PipelineView {...common} />}
         {activeView === "calendar" && <CalendarView {...common} />}
-        {activeView === "documents" && <PropertyFilesView {...common} setActiveView={setActiveView} />}
+        {activeView === "documents" && <PropertyFilesView {...common} setActiveView={setActiveView} cloudUser={cloudUser} />}
       </main>
       {selectedInquiry && <InquiryDialog key={selectedInquiry.id} inquiry={selectedInquiry} onClose={() => setSelectedInquiry(null)} onUpdate={updateInquiry} />}
-      {adding && <AddInquiryDialog onClose={() => setAdding(false)} onAdd={(inquiry) => setInquiries((current) => [inquiry, ...current])} />}
+      {adding && <AddInquiryDialog onClose={() => setAdding(false)} onAdd={addInquiry} />}
       {celebration && <WinCelebration key={celebration.id} property={celebration.property} onComplete={() => setCelebration(null)} />}
+      {cloudMessage && <div className="property-toast" role="status"><Check size={16} />{cloudMessage}</div>}
     </div>
   );
 }
