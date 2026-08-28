@@ -67,6 +67,7 @@ const rowToProperty = (row) => ({
   owner: row.owner_name,
   nextAction: row.next_action,
   sourceCount: row.source_count,
+  sourceFiles: Array.isArray(row.source_files) ? row.source_files : [],
   documents: row.documents || [],
 });
 

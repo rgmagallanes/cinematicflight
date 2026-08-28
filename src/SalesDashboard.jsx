@@ -333,6 +333,7 @@ function PropertyFilesView({ inquiries, openInquiry, setActiveView, cloudUser })
 
   const activeProperty = properties.find((property) => property.id === activePropertyId) || properties[0];
   const activeDocument = activeProperty?.documents.find((document) => document.id === activeDocumentId) || activeProperty?.documents[0];
+  const activeSourceFiles = Array.isArray(activeProperty?.sourceFiles) ? activeProperty.sourceFiles : [];
   const isImportedDocument = activeDocument?.status === "Imported";
   const currentStep = activeDocument?.status === "Sent" ? 3 : activeDocument?.status === "Ready" ? 2 : 1;
 
@@ -555,7 +556,7 @@ function PropertyFilesView({ inquiries, openInquiry, setActiveView, cloudUser })
 
       <aside className="property-context-rail">
         <section><h2>Linked enquiry</h2><h3>{activeProperty.name}<Status stage={activeProperty.stage} /></h3><p>Enquiry #{activeProperty.enquiryId}</p><p>Received {activeProperty.received}</p><p>Owner: {activeProperty.owner}</p>{relatedInquiry && <button type="button" onClick={() => openInquiry(relatedInquiry)}>View enquiry <ArrowRight size={16} /></button>}</section>
-        <section><h2>Source material</h2><h3>{activeProperty.sourceCount} photographs</h3><p>Added Aug 28, 2026</p><ul>{activeProperty.sourceFiles.map((file) => <li key={file}><FileText size={15} />{file}</li>)}</ul><p>+ {Math.max(0, activeProperty.sourceCount - activeProperty.sourceFiles.length)} more files</p></section>
+        <section><h2>Source material</h2><h3>{activeProperty.sourceCount || 0} photographs</h3><p>Added Aug 28, 2026</p>{activeSourceFiles.length > 0 && <ul>{activeSourceFiles.map((file) => <li key={file}><FileText size={15} />{file}</li>)}</ul>}{activeSourceFiles.length === 0 && <p>No source filenames recorded yet.</p>}<p>+ {Math.max(0, (activeProperty.sourceCount || 0) - activeSourceFiles.length)} more files</p></section>
         <section><h2>Document status</h2><h3>{activeDocument.status}<i aria-hidden="true" /> Version {activeDocument.version}</h3>{activeDocument.source && <p className="document-import-source">Imported from {activeDocument.source}</p>}<dl><div><dt>Created</dt><dd>{activeDocument.created}</dd></div><div><dt>Last saved</dt><dd>{activeDocument.updated}</dd></div></dl></section>
         <section><h2>Next sales action</h2><h3>{activeProperty.nextAction}</h3><strong>Priority: High</strong><p>Planned for Sep 2, 2026</p><button type="button" onClick={() => setActiveView("pipeline")}>View in pipeline <ArrowRight size={16} /></button></section>
       </aside>
