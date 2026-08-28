@@ -77,10 +77,22 @@ function image_public_row(array $row): array
     ];
 }
 
-$configFile = __DIR__ . '/config.php';
+$environmentConfig = getenv('CINEMATIC_FLIGHT_CONFIG_PATH');
+$configCandidates = array_values(array_filter([
+    is_string($environmentConfig) ? trim($environmentConfig) : '',
+    dirname(__DIR__, 2) . '/cinematic-flight-private/config.php',
+    __DIR__ . '/config.php',
+]));
+$configFile = '';
+foreach ($configCandidates as $candidate) {
+    if (is_file($candidate)) {
+        $configFile = $candidate;
+        break;
+    }
+}
 $action = (string) ($_GET['action'] ?? 'status');
 
-if (!is_file($configFile)) {
+if ($configFile === '') {
     if ($action === 'status') respond(['configured' => false]);
     respond(['error' => 'The Studio API has not been configured.'], 503);
 }

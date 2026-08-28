@@ -1,5 +1,7 @@
 <?php
 
+// On Hostinger, save the completed file as:
+// cinematic-flight-private/config.php (beside public_html, not inside it).
 return [
     'db_host' => 'localhost',
     'db_port' => 3306,

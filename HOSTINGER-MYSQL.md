@@ -10,9 +10,13 @@ If Studio was already installed before client image attachments were added, run 
 
 ## 2. Configure the private PHP API
 
-Copy `public/api/config.example.php` to `public/api/config.php` and replace every placeholder. Use the database host shown by Hostinger and a long, unique setup token.
+In Hostinger File Manager, create a folder named `cinematic-flight-private` beside `public_html`—the same level where your screenshot showed `public_html` and `hbuilds`.
 
-`config.php` is ignored by Git. Never commit or publish its database password. The API directory's `.htaccess` prevents web access to configuration files.
+Copy `public/api/config.example.php` into that private folder, rename it to `config.php`, and replace every placeholder. Use the database host shown by Hostinger and a long, unique setup token. The final server path is:
+
+`cinematic-flight-private/config.php`
+
+This folder is outside the website document root, so a new build cannot overwrite it and visitors cannot request it through the website. Never commit or publish its database password. The API still accepts the older `public_html/api/config.php` location as a migration fallback, but the private location takes priority.
 
 Client images are stored outside `public_html` by default, in `cinematic-flight-storage/client-images` beside the web root. The PHP API checks the signed-in owner before serving an image. If Hostinger requires a different writable location, add an absolute `image_storage_path` in `config.php`; see `config.example.php`.
 
@@ -20,11 +24,11 @@ Client images are stored outside `public_html` by default, in `cinematic-flight-
 
 Run `npm run build`. Upload the contents of `dist/client` to the document root for `studio.cinematicflight.com`.
 
-Then upload your completed private `config.php` to the deployed `/api/config.php` path. Vite copies the PHP API, setup page, and protection file into `dist/client/api`, but it does not copy the ignored private configuration.
+Vite copies the PHP API, setup page, and protection file into `dist/client/api`. It does not touch `cinematic-flight-private/config.php`, so future deployments can safely replace the entire published build.
 
 ## 4. Create the first owner
 
-Visit `https://studio.cinematicflight.com/api/setup.html`. Enter the setup token from `config.php`, your email address, and a password of at least 12 characters.
+Visit `https://studio.cinematicflight.com/api/setup.html`. Enter the setup token from the private `config.php`, your email address, and a password of at least 12 characters.
 
 The setup endpoint disables itself after the first owner is created. You may then delete `setup.html` from the server for additional housekeeping.
 
