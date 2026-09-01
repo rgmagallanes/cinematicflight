@@ -201,6 +201,12 @@ if ($action === 'logout' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     respond(['signedOut' => true]);
 }
 
+if ($action === 'review-ingest') {
+    require_once __DIR__ . '/review-queue.php';
+    require_once __DIR__ . '/review-ingest.php';
+    review_ingest_route($pdo, $config);
+}
+
 $ownerId = require_user();
 
 if (in_array($action, ['review-drafts', 'review-draft', 'review-import', 'review-change', 'review-attachment'], true)) {

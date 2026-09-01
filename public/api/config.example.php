@@ -18,6 +18,13 @@ return [
     // review migration and authenticated API tests pass on the target server.
     'review_queue_enabled' => false,
     'review_test_sender' => '', // Your own test sender address, never a customer.
+    // Import-only n8n production bridge. Enable for one designated fictional
+    // message, then disable again after its pending draft is confirmed.
+    'review_import_enabled' => false,
+    'review_import_token' => '', // Exactly 64 lowercase hex characters.
+    'review_import_owner_email' => '', // Existing Studio owner login email.
+    'review_import_inquiry_id' => '', // Existing fictional enquiry external ID.
+    'review_import_uid' => 0, // Exact positive UID of the designated test email.
     // Separate, optional attachment preview support. Keep disabled until the
     // additive attachment migration is installed and this private folder exists.
     // The folder must be outside public_html and writable only by the PHP app.

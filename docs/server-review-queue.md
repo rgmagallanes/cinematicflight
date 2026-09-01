@@ -76,6 +76,45 @@ the local server screen):
 | `review-import` | POST | Store linked fictional draft; duplicate imports preserve decisions |
 | `review-change` | POST | `edited`, `approved`, `rejected`, or `reopened` only |
 
+### Production n8n import-only bridge
+
+Production n8n ingestion uses only:
+
+`POST https://studio.cinematicflight.com/api/index.php?action=review-ingest`
+
+It does not use an owner cookie or Studio password. The request needs an
+`Authorization: Bearer …` header whose value matches a 64-character lowercase
+hex token in the account-level private `config.php`. The bridge is disabled
+independently from the owner queue and must be pinned to one owner, one existing
+fictional enquiry, and the exact UID of the designated test email:
+
+```php
+'review_queue_enabled' => true,
+'review_test_sender' => 'YOUR-EXACT-TEST-SENDER',
+'review_import_enabled' => false,
+'review_import_token' => '64-LOWERCASE-HEX-CHARACTERS',
+'review_import_owner_email' => 'YOUR-STUDIO-LOGIN-EMAIL',
+'review_import_inquiry_id' => 'EXISTING-FICTIONAL-ENQUIRY-ID',
+'review_import_uid' => 0,
+```
+
+Keep `review_import_enabled` false until the endpoint has been deployed and the
+new email's UID has been read without changing the mailbox. Set the exact UID,
+enable the flag for the one manual run, confirm the pending draft in Studio,
+then disable the flag again. The linked enquiry must already belong to the
+configured Studio owner and its contact email must exactly match
+`review_test_sender`.
+
+The token route additionally fixes the hello mailbox, INBOX folder,
+`CF-AI-TEST-001` subject, exact fictional body, unsent/unapproved flags, sender,
+reply address, and UID. A valid Message-ID remains mandatory. UIDVALIDITY is
+stored when supplied; `null` is accepted only with an explicit not-verified
+provenance label. The response is a narrow receipt containing the draft ID,
+pending status, version, duplicate indicator, review URL, and
+`sendingEnabled: false`. The token cannot list/read drafts, change decisions,
+retrieve attachments, or send mail. Repeating the identical import is safe;
+different generated text for the same message is rejected.
+
 Import JSON object:
 
 ```text
@@ -157,8 +196,8 @@ tables. Two independent PHP processes race against actual InnoDB locks.
 They use fictional fixtures only. This is not a production security audit,
 provider integration test or browser/UI verification.
 
-On 2026-09-01, all 44 API checks and 45 ingestion/attachment checks passed against
-real PHP/MariaDB, along with the 31 review UI checks, 27 n8n workflow checks, four
+On 2026-09-01, all 58 API checks and 46 ingestion/attachment checks passed against
+real PHP/MariaDB, along with the 43 review UI checks, 27 n8n workflow checks, seven
 Sites checks, and both marketing/Sites and Studio builds. The
 builds retain the existing large-chunk warning. Temporary test containers were
 stopped; the database is disposable and the n8n installation is separate.
@@ -168,12 +207,14 @@ stopped; the database is disposable and the n8n installation is separate.
 1. The authenticated local server screen is connected and visibly separate from
    the browser-only demo. Complete actual browser visual QA before treating its
    layout and interaction behavior as visually verified.
-2. Local import-only n8n credentials are implemented without owner sessions.
-   Verify Hostinger UIDVALIDITY and Reply-To/threading semantics before expanding
-   beyond the designated local test or treating metadata as send-ready.
-3. Obtain explicit approval before applying the additive migration or enabling
-   the test queue on private production Studio. Verify with the owner's own
-   designated test email only, and keep sending disabled.
+2. Local import-only n8n credentials are implemented without owner sessions. A
+   separately disabled, token-authenticated production import route is prepared
+   and integration-tested but must be deployed and configured before use.
+3. For the one production test, create or select an existing fictional enquiry
+   whose contact matches the configured test sender, read the new email's exact
+   UID and Message-ID, pin its UID privately, enable the import flag, and perform
+   one manual n8n run. Disable the import flag again after the pending record is
+   visible. Keep attachments and sending disabled.
 4. Add provider-verified threading/recipient checks and sent-folder reconciliation
    before enabling any send button. Handle external replies, duplicate sends,
    ambiguous provider timeouts, and retries without assuming exactly-once delivery.

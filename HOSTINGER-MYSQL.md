@@ -60,3 +60,13 @@ It remains disabled by default, accepts only the designated fictional test email
 and has no send or sent-mail synchronization operation. See
 [server-review-queue.md](docs/server-review-queue.md) for the API contract, isolated
 tests, current UI/ingestion limitations and rollout gates.
+
+The optional n8n production bridge is a separate import-only route and remains
+off unless both `review_queue_enabled` and `review_import_enabled` are boolean
+`true`. Keep its 64-hex Bearer token only in the account-level private
+`config.php` and the matching n8n Bearer credential. Never place the token in a
+workflow export, repository file, query string, screenshot, or browser storage.
+Before the single fictional-email run, also pin the existing Studio owner email,
+existing fictional enquiry external ID, and exact email UID as documented in
+`docs/server-review-queue.md`. Disable `review_import_enabled` after the pending
+draft is confirmed in Studio.

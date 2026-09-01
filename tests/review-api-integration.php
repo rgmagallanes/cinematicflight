@@ -16,7 +16,9 @@ $pdo->exec("insert into studio_inquiries(owner_id,external_id,property_name,cont
 
 $configPath = tempnam(sys_get_temp_dir(), 'cf-review-config-');
 $config = ['db_host'=>'db','db_name'=>'review_test','db_user'=>'root','db_password'=>'fictional-local-test-only',
-    'allowed_origin'=>'http://127.0.0.1:8099','setup_token'=>'disabled-after-fixture','review_queue_enabled'=>false,'review_test_sender'=>'sender@example.test'];
+    'allowed_origin'=>'http://127.0.0.1:8099','setup_token'=>'disabled-after-fixture','review_queue_enabled'=>false,'review_test_sender'=>'sender@example.test',
+    'review_import_enabled'=>false,'review_import_token'=>str_repeat('a',64),'review_import_owner_email'=>'one@example.test',
+    'review_import_inquiry_id'=>'test-enquiry','review_import_uid'=>7];
 function save_config(): void {
     global $configPath, $config;
     file_put_contents($configPath, '<?php return ' . var_export($config, true) . ';');
@@ -37,12 +39,13 @@ function check(bool $ok, string $label): void {
     $checks++;
     echo "PASS: {$label}\n";
 }
-function http_call(string $action, string $method = 'GET', ?array $body = null, array &$session = [], ?string $origin = null, bool $csrf = true, ?string $raw = null): array {
+function http_call(string $action, string $method = 'GET', ?array $body = null, array &$session = [], ?string $origin = null, bool $csrf = true, ?string $raw = null, array $extraHeaders = []): array {
     $headers = ['Accept: application/json'];
     if ($method !== 'GET') $headers[] = 'Content-Type: application/json';
     if (!empty($session['cookie'])) $headers[] = 'Cookie: ' . $session['cookie'];
     if ($csrf && !empty($session['csrfToken'])) $headers[] = 'X-CSRF-Token: ' . $session['csrfToken'];
     if ($origin !== null) $headers[] = 'Origin: ' . $origin;
+    array_push($headers, ...$extraHeaders);
     $context = stream_context_create(['http'=>['method'=>$method,'header'=>implode("\r\n",$headers),'content'=>$raw ?? ($body === null ? '' : json_encode($body)), 'ignore_errors'=>true,'timeout'=>5]]);
     $response = @file_get_contents('http://127.0.0.1:8099/api/index.php?action=' . $action, false, $context);
     $status = 0;
@@ -70,6 +73,37 @@ check(http_call('review-import','POST',[],$one,null,false)['status'] === 419, 'w
 check(http_call('review-import','POST',[],$one,null,true,str_repeat('x',65537))['status'] === 413, 'oversized body denied');
 check(http_call('review-import','POST',[],$one,null,true,'[]')['status'] === 400, 'non-object payload denied');
 check(http_call('review-drafts','DELETE',[],$one)['status'] === 405, 'unsupported route method denied');
+
+$service=[];
+$serviceDraft=['inquiryId'=>'test-enquiry','draftReply'=>'Production bridge fictional reply.','model'=>'test-model','sentToClient'=>false,'approvalRecorded'=>false,
+    'source'=>['mailbox'=>'hello@cinematicflight.com','folder'=>'INBOX','uid'=>7,'uidValidity'=>null,'messageId'=>'<production-test-007@example.test>',
+        'from'=>'sender@example.test','replyTo'=>'sender@example.test','subject'=>'CF-AI-TEST-001',
+        'enquiryText'=>'This is a fictional test enquiry. We already have a property website. Can you add a cinematic experience without rebuilding everything?']];
+$bearer=['Authorization: Bearer '.str_repeat('a',64)];
+check(http_call('review-ingest','GET',null,$service,null,false,null,$bearer)['status'] === 405, 'production import rejects non-POST methods');
+check(http_call('review-ingest','POST',$serviceDraft,$service,null,false,null,$bearer)['status'] === 503, 'production import has a separate disabled flag');
+$config['review_import_enabled']=true; save_config();
+check(http_call('review-ingest','POST',$serviceDraft,$service,null,false)['status'] === 403, 'production import requires Bearer authorization');
+check(http_call('review-ingest','POST',$serviceDraft,$service,null,false,null,['Authorization: Bearer '.str_repeat('b',64)])['status'] === 403, 'production import rejects the wrong token');
+$invalidService=$serviceDraft;$invalidService['source']['uid']=8;
+check(http_call('review-ingest','POST',$invalidService,$service,null,false,null,$bearer)['status'] === 422, 'production import rejects another message UID');
+$invalidService=$serviceDraft;$invalidService['source']['enquiryText']='A real customer message';
+check(http_call('review-ingest','POST',$invalidService,$service,null,false,null,$bearer)['status'] === 422, 'production import rejects non-fictional body text');
+$invalidService=$serviceDraft;$invalidService['approvalRecorded']=true;
+check(http_call('review-ingest','POST',$invalidService,$service,null,false,null,$bearer)['status'] === 422, 'production import cannot carry approval');
+$invalidService=$serviceDraft;$invalidService['inquiryId']='wrong-contact';
+check(http_call('review-ingest','POST',$invalidService,$service,null,false,null,$bearer)['status'] === 422, 'production import is pinned to one enquiry');
+$serviceCreated=http_call('review-ingest','POST',$serviceDraft,$service,null,false,null,$bearer);
+check($serviceCreated['status'] === 200 && $serviceCreated['json']['savedToProductionReview'] === true && $serviceCreated['json']['duplicate'] === false, 'production import stores the designated pending draft');
+check($serviceCreated['json']['status'] === 'pending' && $serviceCreated['json']['sendingEnabled'] === false && !isset($serviceCreated['json']['record']), 'production import returns only a narrow unsendable receipt');
+check(count(http_call('review-drafts','GET',null,$one)['json']['data']) === 1, 'signed-in designated owner can see the imported draft');
+$serviceDuplicate=http_call('review-ingest','POST',$serviceDraft,$service,null,false,null,$bearer);
+check($serviceDuplicate['status'] === 200 && $serviceDuplicate['json']['duplicate'] === true, 'production import replay is idempotent');
+$invalidService=$serviceDraft;$invalidService['draftReply']='A different generation.';
+check(http_call('review-ingest','POST',$invalidService,$service,null,false,null,$bearer)['status'] === 409, 'production import cannot overwrite a saved generation');
+$config['review_import_enabled']=false; save_config();
+check(http_call('review-ingest','POST',$serviceDraft,$service,null,false,null,$bearer)['status'] === 503, 'production import can be switched off after the test');
+$config['review_import_enabled']=true; save_config();
 
 $draft = ['inquiryId'=>'test-enquiry','draftReply'=>"A fictional reply.\nPlease review.",'model'=>'test-model','sentToClient'=>false,'approvalRecorded'=>false,
     'source'=>['mailbox'=>'hello@cinematicflight.com','folder'=>'INBOX','uid'=>2,'uidValidity'=>100,'messageId'=>'<test-001@example.test>',
