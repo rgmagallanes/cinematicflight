@@ -184,6 +184,11 @@ if ($action === 'logout' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $ownerId = require_user();
 
+if (in_array($action, ['review-drafts', 'review-draft', 'review-import', 'review-change', 'review-attachment'], true)) {
+    require_once __DIR__ . '/review-queue.php';
+    review_route($pdo, $ownerId, $action, $config);
+}
+
 if ($action === 'inquiry-image' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     $imageId = (int) ($_GET['id'] ?? 0);
     if ($imageId < 1) respond(['error' => 'The image could not be found.'], 404);

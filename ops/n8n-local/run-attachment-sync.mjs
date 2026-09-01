@@ -1,0 +1,12 @@
+import {spawnSync} from 'node:child_process';
+import {attachmentWorkflowId} from './attachment-sync.mjs';
+const result=spawnSync('/Applications/Docker.app/Contents/Resources/bin/docker',['exec','-e','N8N_RUNNERS_BROKER_PORT=5689','cinematicflight-n8n','n8n','execute','--id='+attachmentWorkflowId,'--rawOutput'],{encoding:'utf8',maxBuffer:40_000_000});
+const output=result.stdout||'',start=output.indexOf('{');
+if(start<0)throw new Error('No structured attachment execution result.');
+const parsed=JSON.parse(output.slice(start,output.lastIndexOf('}')+1));
+const run=parsed.data?.resultData?.runData||{};
+const receipt=run['Register attachment list']?.at(-1)?.data?.main?.[0]?.[0]?.json;
+const stored=run['Save private attachment']?.at(-1)?.data?.main?.[0]?.map(item=>item.json)||[];
+const error=parsed.data?.resultData?.error?.message;
+if(result.status!==0||!receipt?.registered||stored.some(item=>item.stored!==true))throw new Error(error||'Attachment sync did not complete.');
+process.stdout.write(JSON.stringify({workflowId:attachmentWorkflowId,registered:receipt.count,stored:stored.length,attachmentIds:stored.map(item=>item.id),aiAnalyzed:stored.some(item=>item.aiAnalyzed!==false),sendingEnabled:stored.some(item=>item.sendingEnabled!==false)},null,2)+'\n');

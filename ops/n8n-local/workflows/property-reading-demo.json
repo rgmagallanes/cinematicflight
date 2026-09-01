@@ -1,0 +1,146 @@
+{
+  "id": "CfReadingDemo001",
+  "name": "Cinematic Flight — Property Reading DEMO",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## START HERE · No paid AI\n1. Click **Execute workflow**.\n2. Open **Review draft (stops here)** and read Output → JSON.\n3. Edit **Sample enquiry** to try another fictional name or set photoCount to 0.\n\nThis workflow uses fixed rules and template text. It does not read image files, call an LLM, write to Studio, record approval or send messages. Publishing is not needed.",
+        "height": 290,
+        "width": 620
+      },
+      "id": "cf-demo-guide",
+      "name": "Demo instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        -340
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "cf-demo-start",
+      "name": "Start manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sample-id",
+              "name": "enquiryId",
+              "value": "DEMO-001",
+              "type": "string"
+            },
+            {
+              "id": "sample-name",
+              "name": "propertyName",
+              "value": "Demo Retreat (fictional)",
+              "type": "string"
+            },
+            {
+              "id": "sample-source",
+              "name": "dataSource",
+              "value": "synthetic",
+              "type": "string"
+            },
+            {
+              "id": "sample-count",
+              "name": "photoCount",
+              "value": 6,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cf-demo-enquiry",
+      "name": "Sample enquiry",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        80
+      ],
+      "notesInFlow": true,
+      "notes": "Fictional inputs only. photoCount is a number, not uploaded images."
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn items.map((item, index) => {\n  const enquiry = item.json;\n  if (enquiry.dataSource !== 'synthetic') {\n    throw new Error('This demo accepts synthetic data only. Do not connect real enquiries yet.');\n  }\n  const propertyName = typeof enquiry.propertyName === 'string' ? enquiry.propertyName.trim() : '';\n  if (!propertyName) throw new Error('A fictional property name is required.');\n  const photoCount = Number(enquiry.photoCount);\n  if (!Number.isInteger(photoCount) || photoCount < 0 || photoCount > 50) {\n    throw new Error('photoCount must be a whole number between 0 and 50.');\n  }\n  const hasListedPhotos = photoCount > 0;\n  const disclaimer = 'SIMULATED DEMO — no AI model was called, no photographs were opened, and no property suitability was assessed.';\n  const draftReading = [\n    '# ' + propertyName + ' — simulated property reading',\n    '',\n    disclaimer,\n    '',\n    '## Supplied sample information',\n    '- Fictional property: ' + propertyName,\n    '- Number of photographs listed in the sample: ' + photoCount,\n    '- Photographs actually analysed: 0',\n    '',\n    '## Example structure only',\n    hasListedPhotos\n      ? 'A future review could consider an arrival, a threshold and a distinctive property experience. These are planning categories, not claims about this property or its photographs.'\n      : 'The sample lists no photographs. A real reading would need permission-cleared material before assessing a journey.',\n    '',\n    '## Questions for a future real review',\n    '- Which photographs may be used, and for what purpose?',\n    '- Which spaces genuinely connect? A photo count cannot establish a route.',\n    '- What should the visitor do next: enquire, book or learn more?',\n    '',\n    '## Next owner action',\n    'Review this sample output in n8n. Nothing has been saved to Studio or sent to a client.'\n  ].join('\\n');\n  const draftReply = hasListedPhotos\n    ? 'DEMO ONLY — Thanks for your enquiry. Before assessing a cinematic website, please confirm permission to review the photographs and tell us which spaces connect. We will identify what can be supported by the material and any missing views.'\n    : 'DEMO ONLY — Thanks for your enquiry. Please share a small selection of permission-cleared photographs so we can begin a first reading.';\n  return {\n    json: {\n      enquiryId: enquiry.enquiryId,\n      propertyName,\n      mode: 'simulated',\n      aiUsed: false,\n      apiCalls: 0,\n      estimatedAiCostUsd: 0,\n      imagesAnalysed: 0,\n      taskStatus: 'Awaiting owner review',\n      materialStatus: hasListedPhotos ? 'Photo count supplied; files not inspected' : 'No photographs listed',\n      draftReading,\n      draftReply,\n      approvalRecorded: false,\n      savedToStudio: false,\n      sentToClient: false,\n      nextAction: 'Read the draft output. Do not send this demo as a real property assessment.'\n    },\n    pairedItem: { item: index }\n  };\n});"
+      },
+      "id": "cf-demo-reading",
+      "name": "Simulated reading - NO AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        80
+      ],
+      "notesInFlow": true,
+      "notes": "Fixed template and simple validation. No model or network calls."
+    },
+    {
+      "parameters": {},
+      "id": "cf-demo-review",
+      "name": "Review draft (stops here)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        820,
+        80
+      ],
+      "notesInFlow": true,
+      "notes": "Open Output / JSON to read the draft. This is not an approval action."
+    }
+  ],
+  "connections": {
+    "Start manually": {
+      "main": [
+        [
+          {
+            "node": "Sample enquiry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample enquiry": {
+      "main": [
+        [
+          {
+            "node": "Simulated reading - NO AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simulated reading - NO AI": {
+      "main": [
+        [
+          {
+            "node": "Review draft (stops here)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Manila",
+    "saveManualExecutions": true
+  },
+  "pinData": {},
+  "tags": []
+}

@@ -1,0 +1,32 @@
+name: cinematicflight-review-test
+services:
+  db:
+    image: mariadb:11.4@sha256:611a2fcc5fa7c6ceb8644c6f74b25ede004ff6c3a6b38c8f8c23d3bbf6c26430
+    environment:
+      MARIADB_ROOT_PASSWORD: fictional-local-test-only
+      MARIADB_DATABASE: review_test
+    tmpfs:
+      - /var/lib/mysql
+    networks: [test]
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  tests:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ../../public:/app/public:ro
+      - ../../database:/app/database:ro
+      - ../../tests:/app/tests:ro
+      - ../review-local:/app/review-local:ro
+    tmpfs:
+      - /run/review-private
+    networks: [test]
+    command: [sh, -c, 'php tests/review-api-integration.php && php tests/review-ingestion-integration.php']
+networks:
+  test:
+    internal: true

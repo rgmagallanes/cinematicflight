@@ -39,3 +39,13 @@ Open `https://studio.cinematicflight.com`. Sign in, update one test enquiry, ref
 Open an enquiry, attach a small test image, close and reopen the enquiry, and open the thumbnail at full size. Remove the test image when finished.
 
 The PHP API uses same-origin, HTTP-only session cookies, CSRF protection, prepared database statements, password hashing, and owner-scoped queries. The frontend never receives the MariaDB password.
+
+## Optional review-queue foundation — not enabled
+
+The new server review queue uses the separate additive migration
+`database/mysql-review-queue.sql`. Do not apply it or enable its private configuration
+as part of an ordinary upload without an explicitly approved controlled test.
+It remains disabled by default, accepts only the designated fictional test email,
+and has no send or sent-mail synchronization operation. See
+[server-review-queue.md](docs/server-review-queue.md) for the API contract, isolated
+tests, current UI/ingestion limitations and rollout gates.

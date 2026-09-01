@@ -1,0 +1,47 @@
+name: cinematicflight-review-local
+services:
+  db:
+    image: mariadb:11.4@sha256:611a2fcc5fa7c6ceb8644c6f74b25ede004ff6c3a6b38c8f8c23d3bbf6c26430
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: local-review-db-only
+      MARIADB_DATABASE: review_local
+      MARIADB_USER: review_local
+      MARIADB_PASSWORD: local-review-app-only
+    volumes:
+      - review_data:/var/lib/mysql
+    networks: [local]
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  api:
+    build: ../review-api-test
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      CINEMATIC_FLIGHT_CONFIG_PATH: /app/review-local/config.php
+      CF_REVIEW_LOCAL: 'yes'
+    ports:
+      - '127.0.0.1:5183:8080'
+    volumes:
+      - ../../public:/app/public:ro
+      - ../../database:/app/database:ro
+      - ./:/app/review-local:ro
+      - review_private:/run/review-private
+    # Docker Desktop needs a bridge for host port publishing. Only PHP joins it;
+    # the database stays on the internal network with no published port.
+    networks: [local, loopback]
+    command: [sh, -c, 'php /app/review-local/init.php && exec php -S 0.0.0.0:8080 -t /app/public /app/review-local/router.php']
+networks:
+  local:
+    internal: true
+  loopback: {}
+volumes:
+  review_data:
+    name: cinematicflight_review_local_data
+  review_private:
+    name: cinematicflight_review_local_private

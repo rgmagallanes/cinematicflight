@@ -13,4 +13,13 @@ return [
     // Optional. Defaults to a private folder beside public_html.
     // 'image_storage_path' => '/home/u123456789/cinematic-flight-storage/client-images',
     'image_upload_max_bytes' => 8388608,
+    // Controlled fictional-email test only. Leave disabled until the additive
+    // review migration and authenticated API tests pass on the target server.
+    'review_queue_enabled' => false,
+    'review_test_sender' => '', // Your own test sender address, never a customer.
+    // Separate, optional attachment preview support. Keep disabled until the
+    // additive attachment migration is installed and this private folder exists.
+    // The folder must be outside public_html and writable only by the PHP app.
+    'review_attachments_enabled' => false,
+    // 'review_attachment_storage' => '/home/u123456789/cinematic-flight-storage/review-attachments',
 ];

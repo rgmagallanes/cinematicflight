@@ -35,3 +35,11 @@ public/api/config.php
 
 # Full-bitrate camera exports; scripts/encode-flight-clips.mjs derives the web clips
 media-src/
+
+# Private local automation exports / replay inputs (may contain email text)
+ops/n8n-local/runtime/
+
+# One-off local n8n inspection helpers
+ops/n8n-local/inspect-attachment-download-sizes.mjs
+ops/n8n-local/inspect-attachment-test-text.mjs
+ops/n8n-local/locate-attachment-test.mjs

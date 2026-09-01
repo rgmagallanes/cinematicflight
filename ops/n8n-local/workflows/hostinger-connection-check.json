@@ -1,0 +1,110 @@
+{
+  "id": "CfHostingerCheck001",
+  "name": "Cinematic Flight — Hostinger Connection Check",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Manila",
+    "saveManualExecutions": true,
+    "executionTimeout": 60
+  },
+  "nodes": [
+    {
+      "id": "host-check-note",
+      "name": "Read-only test instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -240
+      ],
+      "parameters": {
+        "width": 640,
+        "height": 220,
+        "content": "## Hostinger connection check · no email access\nChoose **Hostinger Mail - hello@cinematicflight.com** in the account-check node, then execute manually.\n\nOnly GET /api/v1/me is called. It returns account/mailbox metadata, not messages. No email reading, sending, flags, deletion, webhooks or NVIDIA calls. This verifies current visible mailboxes; it cannot prove the token excludes future mailboxes."
+      }
+    },
+    {
+      "id": "host-check-start",
+      "name": "Start manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        80
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "host-check-http",
+      "name": "Hostinger - account metadata only",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        80
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.mail.hostinger.com/api/v1/me",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "stopWorkflow",
+      "notes": "Select the HOSTINGER credential, not NVIDIA. GET only; no messages fetched.",
+      "notesInFlow": true
+    },
+    {
+      "id": "host-check-result",
+      "name": "Connection result - stops here",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        80
+      ],
+      "parameters": {
+        "jsCode": "const mailboxes = $input.first().json.data?.mailboxes;\nif (!Array.isArray(mailboxes)) throw new Error('Unexpected account response; no mailbox operations attempted.');\nif (mailboxes.length !== 1 || mailboxes[0].address?.toLowerCase() !== 'hello@cinematicflight.com') throw new Error('Token does not show exactly the intended hello mailbox. Review mailbox scope before proceeding.');\nconst box = mailboxes[0];\nif (typeof box.resourceId !== 'string' || !box.resourceId) throw new Error('Missing mailbox identifier.');\nreturn [{json:{connectionVerified:true,mailboxAddress:box.address,mailboxResourceId:box.resourceId,visibleMailboxCount:mailboxes.length,scopeCaveat:'Confirms currently visible mailboxes only; verify Selected mailboxes in Hostinger.',emailsRead:0,messagesSent:0,mailboxChanges:0,aiCalls:0,nextAction:'Designate a synthetic test email before connecting any message content to AI.'}}];"
+      }
+    }
+  ],
+  "connections": {
+    "Start manually": {
+      "main": [
+        [
+          {
+            "node": "Hostinger - account metadata only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hostinger - account metadata only": {
+      "main": [
+        [
+          {
+            "node": "Connection result - stops here",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

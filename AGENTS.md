@@ -65,6 +65,8 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 
 ## Studio sales workflow decisions
 
+- Show approved review drafts with a clearly green status label and readable contrasting text. Keep the written approval status visible; green indicates approval, not that an email was sent.
+- Show email attachments alongside the review enquiry with names, types, sizes and an explicit not-reviewed state. Open supported files inside the app with keyboard navigation, Escape, focus containment/restoration and private authenticated access. Viewing must not imply approval, malware clearance or AI analysis; unsupported types remain listed, not executed.
 - Every enquiry must carry two separate operational signals: its sales stage and its next-action status.
 - Next-action status uses four clear states: Due today, Upcoming, Overdue, and Completed.
 - Stage, next action, due timing, and action status must be editable from the enquiry detail and saved locally in the prototype.
@@ -73,3 +75,4 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Local demo mode is allowed only when no executable API is present, such as localhost Vite development. If the deployed PHP API exists but its configuration or database connection fails, keep Studio locked and do not expose browser-cached data.
 - Attach client images directly to their enquiry. Store image metadata in owner-scoped MariaDB rows and the image files in private server storage outside `public_html`; serve them only through the authenticated PHP API. Support JPEG, PNG, WebP, and GIF, with an 8 MB per-image default and explicit preview, full-size view, and removal controls.
 - Open enquiry images in an in-app, full-screen gallery rather than a new browser tab. Preserve filename, size, position count, previous/next navigation, keyboard arrows, Escape-to-close, focus containment/restoration, background isolation, and touch-friendly compact controls.
+- Show a small authenticated thumbnail beside each supported enquiry-image attachment so the owner can identify it before opening the full-screen gallery. Keep the thumbnail clickable and retain the explicit not-reviewed/no-AI status.
