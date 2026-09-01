@@ -78,11 +78,30 @@ function image_public_row(array $row): array
 }
 
 $environmentConfig = getenv('CINEMATIC_FLIGHT_CONFIG_PATH');
-$configCandidates = array_values(array_filter([
+$homeDirectory = getenv('HOME');
+if (!is_string($homeDirectory) || trim($homeDirectory) === '') {
+    $homeDirectory = isset($_SERVER['HOME']) && is_string($_SERVER['HOME']) ? $_SERVER['HOME'] : '';
+}
+$homeDirectory = rtrim(trim($homeDirectory), DIRECTORY_SEPARATOR);
+
+// Hostinger's managed Vite deployments may replace the whole domain directory,
+// including folders beside public_html. Prefer the hosting-account home so a
+// release cannot remove the private configuration.
+$documentRoot = isset($_SERVER['DOCUMENT_ROOT']) && is_string($_SERVER['DOCUMENT_ROOT'])
+    ? rtrim($_SERVER['DOCUMENT_ROOT'], DIRECTORY_SEPARATOR)
+    : '';
+$documentRootAccount = '';
+if ($documentRoot !== '' && preg_match('#^(/home/[^/]+)(?:/|$)#', $documentRoot, $matches) === 1) {
+    $documentRootAccount = $matches[1];
+}
+
+$configCandidates = array_values(array_unique(array_filter([
     is_string($environmentConfig) ? trim($environmentConfig) : '',
+    $homeDirectory !== '' ? $homeDirectory . '/cinematic-flight-private/config.php' : '',
+    $documentRootAccount !== '' ? $documentRootAccount . '/cinematic-flight-private/config.php' : '',
     dirname(__DIR__, 2) . '/cinematic-flight-private/config.php',
     __DIR__ . '/config.php',
-]));
+])));
 $configFile = '';
 foreach ($configCandidates as $candidate) {
     if (is_file($candidate)) {

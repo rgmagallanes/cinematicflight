@@ -1,7 +1,8 @@
 <?php
 
-// On Hostinger, save the completed file as:
-// cinematic-flight-private/config.php (beside public_html, not inside it).
+// On Hostinger's managed Vite deployment, save the completed file at the
+// hosting-account level, above domains/:
+// /home/YOUR_ACCOUNT/cinematic-flight-private/config.php
 return [
     'db_host' => 'localhost',
     'db_port' => 3306,

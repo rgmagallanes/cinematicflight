@@ -10,13 +10,22 @@ If Studio was already installed before client image attachments were added, run 
 
 ## 2. Configure the private PHP API
 
-In Hostinger File Manager, create a folder named `cinematic-flight-private` beside `public_html`—the same level where your screenshot showed `public_html` and `hbuilds`.
+In Hostinger File Manager, click the home icon and create a folder named
+`cinematic-flight-private` beside `domains`, at the hosting-account level. Do not
+put it inside `domains/studio.cinematicflight.com`: that directory contains
+`hbuilds` and `DO_NOT_UPLOAD_HERE` and is replaced by Hostinger's managed Vite
+deployment.
 
 Copy `public/api/config.example.php` into that private folder, rename it to `config.php`, and replace every placeholder. Use the database host shown by Hostinger and a long, unique setup token. The final server path is:
 
-`cinematic-flight-private/config.php`
+`/home/YOUR_HOSTINGER_USERNAME/cinematic-flight-private/config.php`
 
-This folder is outside the website document root, so a new build cannot overwrite it and visitors cannot request it through the website. Never commit or publish its database password. The API still accepts the older `public_html/api/config.php` location as a migration fallback, but the private location takes priority.
+This folder is outside both the website document root and the managed domain
+release directory, so a new build cannot overwrite it and visitors cannot request
+it through the website. The API checks `CINEMATIC_FLIGHT_CONFIG_PATH` first, then
+the hosting-account private folder. The former domain-level private folder and
+`public_html/api/config.php` remain migration fallbacks only. Never commit or
+publish the database password.
 
 Client images are stored outside `public_html` by default, in `cinematic-flight-storage/client-images` beside the web root. The PHP API checks the signed-in owner before serving an image. If Hostinger requires a different writable location, add an absolute `image_storage_path` in `config.php`; see `config.example.php`.
 
@@ -24,7 +33,9 @@ Client images are stored outside `public_html` by default, in `cinematic-flight-
 
 Run `npm run build`. Upload the contents of `dist/client` to the document root for `studio.cinematicflight.com`.
 
-Vite copies the PHP API, setup page, and protection file into `dist/client/api`. It does not touch `cinematic-flight-private/config.php`, so future deployments can safely replace the entire published build.
+Vite copies the PHP API, setup page, and protection file into `dist/client/api`.
+It does not touch the account-level `cinematic-flight-private/config.php`, so
+future deployments can safely replace the managed domain build.
 
 ## 4. Create the first owner
 
