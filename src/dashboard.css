@@ -75,6 +75,8 @@
 .studio-unavailable h1 { font-size: clamp(2.4rem, 5.4vw, 3.7rem); }.studio-unavailable > p { margin-bottom: 0; }
 
 .dashboard-main { min-height: 100vh; margin-left: 270px; padding: 66px clamp(28px, 4.5vw, 70px) 32px; overflow: hidden; }
+.dashboard-main.is-review-inbox { padding: 0; overflow: visible; }
+.studio-review-loading { display: grid; min-height: 70vh; place-items: center; color: var(--dashboard-brass); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
 .dashboard-page-header { display: flex; justify-content: space-between; gap: 32px; align-items: flex-start; min-height: 208px; }
 .dashboard-page-header h1 { margin: 0; color: var(--dashboard-ink); font-family: "Bodoni Moda", "Iowan Old Style", Georgia, serif; font-size: clamp(3.4rem, 4.2vw, 4.3rem); font-weight: 400; line-height: 0.93; letter-spacing: -0.035em; }
 .dashboard-page-header > div > p:not(.dashboard-eyebrow) { max-width: 390px; margin: 18px 0 0; color: #657369; font-size: 0.93rem; line-height: 1.5; }

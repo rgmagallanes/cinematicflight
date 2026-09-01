@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { deleteInquiryImage, loadInquiries, loadInquiryImages, loadPropertyFiles, saveInquiry, savePropertyFiles, seedInquiries, uploadInquiryImages } from "./lib/studioData.js";
+import { clearOwnerReviewWork } from "./lib/reviewWorkStore.js";
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,6 +16,7 @@ import {
   Circle,
   Clock,
   DownloadSimple,
+  EnvelopeSimpleOpen,
   FileText,
   FloppyDisk,
   FolderOpen,
@@ -39,6 +41,8 @@ import {
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
+
+const StudioReviewInbox = lazy(() => import('./StudioReviewInbox.jsx'));
 
 const initialInquiries = [
   { id: 1, property: "Riverstone Lodge", contact: "Amelia Hart", email: "amelia@example.com", stage: "Proposal", activity: "Aug 25", next: "Follow up on proposal", actionStatus: "Due today", due: "9:30 AM", detail: "Proposal sent Aug 25" },
@@ -88,6 +92,7 @@ const navItems = [
   { id: "calendar", label: "Calendar", icon: CalendarBlank },
   { id: "documents", label: "Property Files", icon: FolderOpen },
 ];
+const reviewNavItem = { id: "review", label: "Review Inbox", icon: EnvelopeSimpleOpen };
 
 const metrics = [
   { label: "New enquiries", value: "12", note: "vs 7-day avg 8" },
@@ -109,14 +114,14 @@ const pipelineSummary = [
   { stage: "Won", value: 1, note: "This period" },
 ];
 
-function Sidebar({ activeView, setActiveView, cloudUser, onSignOut }) {
+function Sidebar({ activeView, setActiveView, cloudUser, onSignOut, items }) {
   return (
     <aside className="dashboard-sidebar">
       <button className="dashboard-brand" type="button" onClick={() => setActiveView("home")} aria-label="Cinematic Flight dashboard home">
         <img src="/assets/brand/cinematic-flight-logo-concept-v1.png" alt="Cinematic Flight" />
       </button>
       <nav className="dashboard-nav" aria-label="Sales workspace">
-        {navItems.map(({ id, label, icon: Icon }) => (
+        {items.map(({ id, label, icon: Icon }) => (
           <button
             className={activeView === id ? "is-active" : ""}
             key={id}
@@ -755,8 +760,8 @@ function AddInquiryDialog({ onAdd, onClose }) {
   );
 }
 
-export function SalesDashboard({ cloudUser = null, onSignOut = null }) {
-  const [activeView, setActiveView] = useState("home");
+export function SalesDashboard({ cloudUser = null, onSignOut = null, onSessionExpired = null, reviewWorkStore = null }) {
+  const [activeView, setActiveView] = useState(() => cloudUser && window.location.pathname === '/review-inbox' ? 'review' : 'home');
   const [inquiries, setInquiries] = useState(() => {
     try { return JSON.parse(localStorage.getItem("cinematic-flight-inquiries-v1")) || initialInquiries; } catch { return initialInquiries; }
   });
@@ -764,12 +769,47 @@ export function SalesDashboard({ cloudUser = null, onSignOut = null }) {
   const [adding, setAdding] = useState(false);
   const [celebration, setCelebration] = useState(null);
   const [cloudMessage, setCloudMessage] = useState("");
-  const title = useMemo(() => navItems.find((item) => item.id === activeView)?.label, [activeView]);
+  const [reviewDirty, setReviewDirty] = useState(false);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const workspaceNavItems = useMemo(() => cloudUser ? [...navItems, reviewNavItem] : navItems, [cloudUser]);
+  const title = useMemo(() => workspaceNavItems.find((item) => item.id === activeView)?.label, [activeView, workspaceNavItems]);
+  const discardReviewWork = () => {
+    clearOwnerReviewWork(reviewWorkStore, cloudUser?.id);
+    setReviewDirty(false);
+  };
+  const navigateView = (view) => {
+    if (view !== 'review' && activeView === 'review' && reviewBusy) { setCloudMessage('Wait for the review decision to finish saving.'); return; }
+    if (view !== 'review' && activeView === 'review' && reviewDirty && !window.confirm('You have unsaved review work. Discard it and leave the Review Inbox?')) return;
+    if (view !== 'review' && activeView === 'review') discardReviewWork();
+    setActiveView(view);
+    if (!cloudUser) return;
+    const path = view === 'review' ? '/review-inbox' : '/';
+    if (window.location.pathname !== path) window.history.pushState({}, '', path);
+  };
 
   useEffect(() => {
     const productName = import.meta.env.VITE_APP_MODE === "studio" ? "Cinematic Flight Studio" : "Cinematic Flight";
     document.title = `${title} — ${productName}`;
   }, [title]);
+  useEffect(() => {
+    if (!cloudUser) return undefined;
+    const syncRoute = () => {
+      const nextView = window.location.pathname === '/review-inbox' ? 'review' : 'home';
+      if (nextView !== 'review' && activeView === 'review' && reviewBusy) {
+        window.history.pushState({}, '', '/review-inbox');
+        setCloudMessage('Wait for the review decision to finish saving.');
+        return;
+      }
+      if (nextView !== 'review' && activeView === 'review' && reviewDirty && !window.confirm('You have unsaved review work. Discard it and leave the Review Inbox?')) {
+        window.history.pushState({}, '', '/review-inbox');
+        return;
+      }
+      if (nextView !== 'review' && activeView === 'review') discardReviewWork();
+      setActiveView(nextView);
+    };
+    window.addEventListener('popstate', syncRoute);
+    return () => window.removeEventListener('popstate', syncRoute);
+  }, [cloudUser, activeView, reviewDirty, reviewBusy]);
   useEffect(() => {
     const close = (event) => { if (event.key === "Escape" && !document.querySelector('[data-client-gallery="open"]')) { setSelectedInquiry(null); setAdding(false); } };
     window.addEventListener("keydown", close);
@@ -807,13 +847,19 @@ export function SalesDashboard({ cloudUser = null, onSignOut = null }) {
 
   return (
     <div className="sales-dashboard">
-      <Sidebar activeView={activeView} setActiveView={setActiveView} cloudUser={cloudUser} onSignOut={onSignOut} />
-      <main className={`dashboard-main ${activeView === "documents" ? "is-property-files" : ""}`}>
-        {activeView === "home" && <HomeView {...common} setActiveView={setActiveView} />}
+      <Sidebar activeView={activeView} setActiveView={navigateView} cloudUser={cloudUser} onSignOut={() => {
+        if (activeView === 'review' && reviewBusy) { setCloudMessage('Wait for the review decision to finish saving.'); return; }
+        if (activeView === 'review' && reviewDirty && !window.confirm('You have unsaved review work. Discard it and sign out?')) return;
+        discardReviewWork();
+        onSignOut?.();
+      }} items={workspaceNavItems} />
+      <main className={`dashboard-main ${activeView === "documents" ? "is-property-files" : ""} ${activeView === 'review' ? 'is-review-inbox' : ''}`}>
+        {activeView === "home" && <HomeView {...common} setActiveView={navigateView} />}
         {activeView === "enquiries" && <EnquiriesView {...common} />}
         {activeView === "pipeline" && <PipelineView {...common} />}
         {activeView === "calendar" && <CalendarView {...common} />}
         {activeView === "documents" && <PropertyFilesView {...common} setActiveView={setActiveView} cloudUser={cloudUser} />}
+        {activeView === 'review' && cloudUser && <Suspense fallback={<div className="studio-review-loading" role="status">Opening private review inbox…</div>}><StudioReviewInbox onSessionExpired={onSessionExpired} workStore={reviewWorkStore} onDirtyChange={setReviewDirty} onBusyChange={setReviewBusy} /></Suspense>}
       </main>
       {selectedInquiry && <InquiryDialog key={selectedInquiry.id} inquiry={selectedInquiry} cloudUser={cloudUser} onClose={() => setSelectedInquiry(null)} onUpdate={updateInquiry} />}
       {adding && <AddInquiryDialog onClose={() => setAdding(false)} onAdd={addInquiry} />}

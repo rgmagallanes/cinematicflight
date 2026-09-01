@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, LockKey, LockSimple } from "@phosphor-icons/react";
 import { SalesDashboard } from "./SalesDashboard.jsx";
 import { getApiStatus, getSession, login, logout } from "./lib/hostingerApi.js";
@@ -52,6 +52,7 @@ function StudioUnavailable() {
 export function StudioEntry() {
   const [user, setUser] = useState(null);
   const [mode, setMode] = useState("checking");
+  const reviewWorkStore = useRef({});
 
   useEffect(() => {
     let active = true;
@@ -73,5 +74,8 @@ export function StudioEntry() {
   if (mode === "local") return <SalesDashboard />;
   if (mode === "unavailable") return <StudioUnavailable />;
   if (!user) return <StudioLogin onAuthenticated={setUser} />;
-  return <SalesDashboard cloudUser={user} onSignOut={async () => { await logout(); setUser(null); }} />;
+  return <SalesDashboard cloudUser={user} reviewWorkStore={reviewWorkStore} onSessionExpired={() => setUser(null)} onSignOut={async () => {
+    try { await logout(); }
+    finally { setUser(null); }
+  }} />;
 }

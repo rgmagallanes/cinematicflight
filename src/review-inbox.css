@@ -137,3 +137,8 @@
 .ri-server-login label { display: block; margin: 20px 0 6px; }
 .ri-server-login input { width: 100%; min-height: 46px; padding: 10px; border: 1px solid var(--ri-muted); color: var(--ri-ink); background: var(--ri-sheet); }
 .ri-server-login button { margin-top: 24px; }
+.ri-embedded { min-height: 100vh; }
+.ri-embedded .ri-page { max-width: none; padding: 60px clamp(24px,4vw,64px) 72px; }
+.ri-embedded .ri-page-heading h1 { font-family: "Bodoni Moda", "Iowan Old Style", Georgia, serif; font-size: clamp(3rem,4.5vw,4.4rem); font-weight: 400; line-height: .95; letter-spacing: -.035em; }
+.ri-embedded .ri-local-note { max-width: 96ch; }
+@media (max-width: 760px) { .ri-embedded .ri-page { padding: 28px 18px 48px; } .ri-embedded .ri-page-heading h1 { font-size: 3rem; } }

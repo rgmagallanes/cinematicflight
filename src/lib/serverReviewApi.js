@@ -1,5 +1,6 @@
-// Dedicated loopback proxy, separate from production Studio and browser storage.
-export function createServerReviewApi(fetcher = globalThis.fetch) {
+// Same-origin review transport. The local default stays on its dedicated
+// loopback proxy; production Studio opts into the authenticated PHP API path.
+export function createServerReviewApi(fetcher = globalThis.fetch, endpoint = '/review-api/index.php') {
   let csrfToken = '';
   async function request(action, body, params = {}) {
     const headers = { Accept: 'application/json' };
@@ -7,7 +8,7 @@ export function createServerReviewApi(fetcher = globalThis.fetch) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 12000);
     try {
-      const response = await fetcher(`/review-api/index.php?${new URLSearchParams({ action, ...params })}`, {
+      const response = await fetcher(`${endpoint}?${new URLSearchParams({ action, ...params })}`, {
         method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store',
         headers, body: body === undefined ? undefined : JSON.stringify(body), signal: controller.signal,
       });
@@ -36,3 +37,4 @@ export function createServerReviewApi(fetcher = globalThis.fetch) {
   };
 }
 export const serverReviewApi = createServerReviewApi();
+export const productionReviewApi = createServerReviewApi(globalThis.fetch, '/api/index.php');

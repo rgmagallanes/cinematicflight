@@ -27,7 +27,7 @@ function fakeApi(){
 const button=text=>[...document.querySelectorAll('button')].find(el=>el.textContent.includes(text));
 async function click(el){assert.ok(el,'control exists');await act(async()=>{el.click();});}
 async function type(selector,value){await act(async()=>{const el=document.querySelector(selector);assert.ok(el);const proto=el.tagName==='TEXTAREA'?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(el,value);el.dispatchEvent(new window.Event('input',{bubbles:true}));});}
-async function mount(api){root=createRoot(document.getElementById('root'));await act(async()=>root.render(createElement(Screen,{client:api})));}
+async function mount(api,props={}){root=createRoot(document.getElementById('root'));await act(async()=>root.render(createElement(Screen,{client:api,...props})));}
 const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
 before(async()=>{
   const require=createRequire(import.meta.url);
@@ -90,6 +90,13 @@ test('older refresh cannot overwrite just-saved text',async()=>{
   await act(async()=>pending.resolve({record:old}));
   assert.equal(document.querySelector('#server-reply').value,'Newer edit');assert.match(document.body.textContent,/Revision 2/);
 });
+test('reload or tab close is guarded while a clean approval is still saving',async()=>{
+  const {api,state}=fakeApi();await mount(api);
+  await click(document.querySelectorAll('input[type=checkbox]')[0]);await click(document.querySelectorAll('input[type=checkbox]')[1]);
+  const pending=deferred();api.change=()=>pending.promise;await act(async()=>button('Approve revision').click());
+  const event=new window.Event('beforeunload',{cancelable:true});window.dispatchEvent(event);assert.equal(event.defaultPrevented,true);
+  await act(async()=>pending.resolve({record:clone(state.record)}));
+});
 test('refresh during logout cannot restore authenticated content',async()=>{
   const {api,state}=fakeApi();await mount(api);const pending=deferred();api.logout=()=>pending.promise;
   await click(button('Sign out'));await act(async()=>window.dispatchEvent(new window.Event('focus')));
@@ -105,6 +112,44 @@ test('server outage hides saved content and retry recovers unsaved edits',async(
 test('empty server queue renders without falling back to browser data',async()=>{
   const {api}=fakeApi();api.list=async()=>({data:[]});await mount(api);
   assert.match(document.body.textContent,/No server drafts yet/);assert.equal(document.querySelector('#server-reply'),null);
+});
+test('embedded production desk shows a deliberate disabled state without another login form',async()=>{
+  const {api}=fakeApi();api.list=async()=>{throw Object.assign(new Error('The server review test is not enabled.'),{status:503});};
+  await mount(api,{embedded:true});
+  assert.equal(document.querySelector('#server-password'),null);
+  assert.equal(document.querySelector('.ri-topbar'),null);
+  assert.match(document.body.textContent,/installed but remains disabled/);
+  assert.match(document.body.textContent,/Queue access is disabled; nothing can be imported or sent through this screen/);
+  assert.doesNotMatch(document.body.textContent,/Saved on this Mac/);
+});
+test('embedded production desk keeps an authenticated empty queue explicit',async()=>{
+  const {api}=fakeApi();api.list=async()=>({data:[]});
+  await mount(api,{embedded:true});
+  assert.match(document.body.textContent,/Controlled production test/);
+  assert.match(document.body.textContent,/No review drafts yet/);
+  assert.match(document.body.textContent,/No local or browser-only drafts are substituted/);
+  assert.equal(document.querySelector('#server-password'),null);
+});
+test('embedded production desk uses Studio persistence language',async()=>{
+  const {api}=fakeApi();await mount(api,{embedded:true});
+  assert.match(document.body.textContent,/saved server-side under your signed-in Studio account/i);
+  assert.match(document.body.textContent,/Saved in Studio/);
+  assert.doesNotMatch(document.body.textContent,/Saved on local server/);
+});
+test('embedded production desk reports an expired owner session to the Studio shell',async()=>{
+  const {api,state}=fakeApi();state.authenticated=false;let expired=0;
+  await mount(api,{embedded:true,onSessionExpired:()=>{expired++;}});
+  assert.equal(expired,1);
+  assert.match(document.body.textContent,/Studio session ended/);
+  assert.equal(document.querySelector('#server-password'),null);
+});
+test('external memory restores unsaved work after the same Studio owner signs in again',async()=>{
+  const {api,state}=fakeApi();const workStore={current:{}};let expired=0;
+  await mount(api,{embedded:true,workStore,onSessionExpired:()=>{expired++;}});await type('#server-reply','Owner recovery copy');
+  state.authenticated=false;await click(button('Refresh from server'));assert.equal(expired,1);
+  await act(async()=>root.unmount());root=null;state.authenticated=true;
+  await mount(api,{embedded:true,workStore,onSessionExpired:()=>{expired++;}});
+  assert.equal(document.querySelector('#server-reply').value,'Owner recovery copy');
 });
 test('write authentication failure preserves unsaved reply for re-login',async()=>{
   const {api,state}=fakeApi();await mount(api);await type('#server-reply','Recover failed save');

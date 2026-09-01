@@ -11,7 +11,7 @@ import './review-inbox.css';
 // No browser-data migration or send. Decisions require server acknowledgement.
 const date = value => new Date(value).toLocaleString();
 
-function ServerEditor({ record, onChange, dirtyRef, workingCopy, preserveCopy, attachmentLoad, previewAllowed, onAccessError }) {
+function ServerEditor({ record, onChange, dirtyRef, workingCopy, preserveCopy, attachmentLoad, previewAllowed, onAccessError, embedded, onDirtyChange, onBusyChange }) {
   const [base, setBase] = useState(workingCopy?.base || record);
   const [text, setText] = useState(workingCopy?.text ?? record.text);
   const [confirmed, setConfirmed] = useState(false);
@@ -28,10 +28,18 @@ function ServerEditor({ record, onChange, dirtyRef, workingCopy, preserveCopy, a
   useEffect(() => {
     dirtyRef.current = hasWork || busy;
     preserveCopy(hasWork ? { base, text, reason, rejecting } : null);
-    const warn = e => { if (hasWork) { e.preventDefault(); e.returnValue = ''; } };
+    const warn = e => { if (hasWork || busy) { e.preventDefault(); e.returnValue = ''; } };
     window.addEventListener('beforeunload', warn);
     return () => { dirtyRef.current = false; window.removeEventListener('beforeunload', warn); };
   }, [hasWork, busy, dirtyRef, base, text, reason, rejecting, preserveCopy]);
+  useEffect(() => {
+    onDirtyChange?.(hasWork);
+    return () => onDirtyChange?.(false);
+  }, [hasWork, onDirtyChange]);
+  useEffect(() => {
+    onBusyChange?.(busy);
+    return () => onBusyChange?.(false);
+  }, [busy, onBusyChange]);
   useEffect(() => {
     if (!hasWork && !busy && stale) { setBase(record); setText(record.text); setConfirmed(false); setLinked(false); setRejecting(false); }
   }, [record, hasWork, busy, stale]);
@@ -52,7 +60,7 @@ function ServerEditor({ record, onChange, dirtyRef, workingCopy, preserveCopy, a
         <ReviewAttachments manifest={record.attachments} load={attachmentLoad} enabled={previewAllowed} onAccessError={onAccessError} />
         <p className="ri-review-note">No provider verification or sent-mail tracking. Photo suitability and website compatibility still require separate checks.</p>
       </section>
-      <section className="ri-reply" aria-labelledby="server-reply-title"><div className="ri-section-heading"><h3 id="server-reply-title">Your reply</h3><span>Revision {base.revision} · {dirty ? 'Unsaved edits' : 'Saved on local server'}</span></div>
+      <section className="ri-reply" aria-labelledby="server-reply-title"><div className="ri-section-heading"><h3 id="server-reply-title">Your reply</h3><span>Revision {base.revision} · {dirty ? 'Unsaved edits' : embedded ? 'Saved in Studio' : 'Saved on local server'}</span></div>
         <label className="sr-only" htmlFor="server-reply">Edit server draft reply</label>
         <textarea id="server-reply" value={text} maxLength={10000} disabled={busy} onChange={e => { setText(e.target.value); setConfirmed(false); setLinked(false); setError(''); }} aria-describedby="server-reply-help" />
         <p id="server-reply-help" className="ri-help">Save changes before deciding. Every edit requires a fresh approval.</p>
@@ -76,7 +84,7 @@ function ServerEditor({ record, onChange, dirtyRef, workingCopy, preserveCopy, a
   </article>;
 }
 
-export default function ServerReviewInbox({ client = api }) {
+export default function ServerReviewInbox({ client = api, embedded = false, onSessionExpired = null, workStore = null, onDirtyChange = null, onBusyChange = null }) {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
   const [email, setEmail] = useState('reviewer@example.test');
@@ -92,36 +100,45 @@ export default function ServerReviewInbox({ client = api }) {
   const epoch = useRef(0);
   const channel = useRef(null);
   const mutating = useRef(false);
-  const work = useRef({}); // Tab memory only; keyed by authenticated owner and draft.
+  const internalWork = useRef({});
+  const work = workStore || internalWork; // Memory only; keyed by authenticated owner and draft.
+  const expireSession = () => {
+    try {
+      const result = onSessionExpired?.();
+      result?.catch?.(() => {});
+    } catch { /* The private shell still handles its own lock state. */ }
+  };
   async function refresh(requestedId = null) {
     if (mutating.current) return;
     const run = ++epoch.current;
     try {
       const session = await client.session();
       if (run !== epoch.current) return;
-      if (!session.authenticated) { setUser(null); setRecord(null); setLocked(false); setError(''); if (Object.keys(work.current).length) setNotice('Session ended. Sign in as the same test owner to recover unsaved work. Do not reload this tab.'); return; }
+      if (!session.authenticated) { setUser(null); setRecord(null); setLocked(false); setError(''); if (Object.keys(work.current).length) setNotice('Session ended. Sign in as the same owner to recover unsaved work. Do not reload this tab.'); expireSession(); return; }
+      setUser(session.user);
       const response = await client.list();
       const wanted = Number.isInteger(requestedId) ? requestedId : selectedId.current;
       const chosen = response.data.find(row => Number(row.id) === wanted) || response.data[0];
       const saved = chosen ? (await client.get(chosen.id)).record : null;
       if (run !== epoch.current) return;
       setQueue(response.data); selectedId.current = saved?.id ?? null;
-      setUser(session.user); setRecord(previous => previous && saved && previous.id === saved.id && previous.version > saved.version ? previous : saved); setLocked(false); setError('');
+      setRecord(previous => previous && saved && previous.id === saved.id && previous.version > saved.version ? previous : saved); setLocked(false); setError('');
     } catch (err) { if (run === epoch.current) failure(err); }
     finally { if (run === epoch.current) setChecking(false); }
   }
   function failure(err) {
     setError(err.message);
-    if (err.status === 401) { setUser(null); setRecord(null); setLocked(false); setNotice('Sign in as the same test owner to recover unsaved work. Do not reload this tab.'); }
+    if (err.status === 401) { setUser(null); setRecord(null); setLocked(false); setNotice('Sign in as the same owner to recover unsaved work. Do not reload this tab.'); expireSession(); }
     else setLocked(true);
   }
   useEffect(() => {
-    document.title = 'Server review · Cinematic Flight Studio';
+    const previousTitle = document.title;
+    if (!embedded) document.title = 'Server review · Cinematic Flight Studio';
     refresh();
     const focus = () => { refresh(); };
     window.addEventListener('focus', focus);
-    if (typeof BroadcastChannel !== 'undefined') { channel.current = new BroadcastChannel('cf-server-review-local'); channel.current.onmessage = focus; }
-    return () => { ++epoch.current; window.removeEventListener('focus', focus); channel.current?.close(); };
+    if (typeof BroadcastChannel !== 'undefined') { channel.current = new BroadcastChannel(embedded ? 'cf-server-review-production' : 'cf-server-review-local'); channel.current.onmessage = focus; }
+    return () => { ++epoch.current; window.removeEventListener('focus', focus); channel.current?.close(); if (!embedded) document.title = previousTitle; };
   }, []);
   async function signIn(e) {
     e.preventDefault(); setBusy(true); setError(''); mutating.current = true; ++epoch.current;
@@ -138,7 +155,7 @@ export default function ServerReviewInbox({ client = api }) {
     mutating.current = true; ++epoch.current;
     try {
       const saved = (await client.change(id, expectedVersion, command)).record;
-      setRecord(saved); setNotice('Saved on the local server. Nothing sent.'); channel.current?.postMessage('changed');
+      setRecord(saved); setNotice(embedded ? 'Saved in Studio. Nothing sent.' : 'Saved on the local server. Nothing sent.'); channel.current?.postMessage('changed');
       return saved;
     } catch (err) {
       mutating.current = false;
@@ -147,15 +164,19 @@ export default function ServerReviewInbox({ client = api }) {
       throw err;
     } finally { mutating.current = false; }
   }
-  return <main className="review-inbox">
+  const featureDisabled = error === 'The server review test is not enabled.';
+  const content = <>
     <a className="ri-skip" href="#server-content">Skip to review</a>
-    <header className="ri-topbar"><a className="ri-brand" href="http://127.0.0.1:5180/review-inbox"><img src="/assets/brand/cinematic-flight-logo-concept-v1.png" alt="Cinematic Flight Studio — browser-only inbox" /></a><span>Local server test</span>{user && <button className="ri-button ri-secondary ri-signout" onClick={signOut} disabled={busy}><SignOut size={18} aria-hidden="true" />Sign out</button>}</header>
-    <div className="ri-page"><header className="ri-page-heading"><div><h1>Server review inbox</h1><p>Signed-in decisions, saved beyond this browser.</p></div>{user && <button className="ri-button ri-secondary" disabled={busy} onClick={refresh}><ArrowClockwise size={18} aria-hidden="true" />Refresh from server</button>}</header>
-      <p className="ri-local-note">Saved on this Mac: the original sample and designated manual n8n test imports. No automatic inbox monitoring, sent-mail tracking or sending. Your browser-only inbox is separate.</p>
+    {!embedded && <header className="ri-topbar"><a className="ri-brand" href="http://127.0.0.1:5180/review-inbox"><img src="/assets/brand/cinematic-flight-logo-concept-v1.png" alt="Cinematic Flight Studio — browser-only inbox" /></a><span>Local server test</span>{user && <button className="ri-button ri-secondary ri-signout" onClick={signOut} disabled={busy}><SignOut size={18} aria-hidden="true" />Sign out</button>}</header>}
+    <div className="ri-page"><header className="ri-page-heading"><div><h1>{embedded ? 'Review inbox' : 'Server review inbox'}</h1><p>{embedded ? 'Owner decisions saved server-side under your signed-in Studio account.' : 'Signed-in decisions, saved beyond this browser.'}</p></div>{user && <button className="ri-button ri-secondary" disabled={busy} onClick={refresh}><ArrowClockwise size={18} aria-hidden="true" />Refresh from server</button>}</header>
+      <p className="ri-local-note">{embedded ? 'Controlled production test. Only the designated fictional email may enter this queue. No automatic inbox monitoring, sent-mail tracking or sending.' : 'Saved on this Mac: the original sample and designated manual n8n test imports. No automatic inbox monitoring, sent-mail tracking or sending. Your browser-only inbox is separate.'}</p>
       {user && !locked && queue.length > 1 && <label className="ri-help">Saved test draft <select aria-label="Saved test draft" value={record?.id ?? ''} disabled={busy} onChange={e => { if (dirtyRef.current) { setNotice('Save or discard your unsaved work before switching drafts.'); return; } refresh(Number(e.target.value)); }}>{queue.map(row => <option key={row.id} value={row.id}>{row.inquiryId || `Draft ${row.id}`} · {row.status || 'pending'}</option>)}</select></label>}
       <p role="status" className="ri-notice">{notice}</p>
-      {error && <div className="ri-error" role="alert">{error} {locked && <>Saved content is hidden until the connection is verified. <button onClick={refresh}>Retry connection</button></>}</div>}
-      {checking ? <p role="status">Checking local server session…</p> : !user ? <section className="ri-server-login" id="server-content" tabIndex={-1}><h2>Sign in to the local test</h2><p>Use the separate test account, not your Hostinger password.</p><form onSubmit={signIn}><label htmlFor="server-email">Test account email</label><input id="server-email" type="email" value={email} required autoComplete="username" onChange={e => setEmail(e.target.value)} /><label htmlFor="server-password">Test account password</label><input id="server-password" type="password" value={password} required autoComplete="current-password" onChange={e => setPassword(e.target.value)} /><button className="ri-button ri-primary" disabled={busy || locked}>{busy ? 'Signing in…' : 'Sign in to local server'}</button></form></section> : <div id="server-content" tabIndex={-1} style={locked ? { display: 'none' } : undefined} inert={locked || undefined}><p className="ri-help">Signed in as {user.email}. Changes are saved only after the server confirms them.</p><div className="ri-server-desk">{record ? <ServerEditor attachmentLoad={client.attachment} previewAllowed={!locked} onAccessError={failure} key={`${user.id}:${record.id}`} record={record} onChange={change} dirtyRef={dirtyRef} workingCopy={work.current[`${user.id}:${record.id}`]} preserveCopy={copy => { const key = `${user.id}:${record.id}`; if (copy) work.current[key] = copy; else delete work.current[key]; }} /> : <section className="ri-empty"><h2>No server drafts yet</h2><p>The local fixture has not been initialized. No browser-only drafts are imported automatically.</p><button className="ri-button ri-secondary" onClick={refresh}>Check again</button></section>}</div></div>}
+      {error && <div className="ri-error" role="alert">{featureDisabled && embedded ? 'The production review inbox is installed but remains disabled. Queue access is disabled; nothing can be imported or sent through this screen.' : error} {locked && !featureDisabled && <>Saved content is hidden until the connection is verified. <button onClick={refresh}>Retry connection</button></>}</div>}
+      {checking ? <p role="status">Checking {embedded ? 'Studio' : 'local server'} session…</p> : !user ? embedded ? <section className="ri-empty" id="server-content" tabIndex={-1}><h2>Your Studio session ended</h2><p>Sign in again before opening private review drafts.</p></section> : <section className="ri-server-login" id="server-content" tabIndex={-1}><h2>Sign in to the local test</h2><p>Use the separate test account, not your Hostinger password.</p><form onSubmit={signIn}><label htmlFor="server-email">Test account email</label><input id="server-email" type="email" value={email} required autoComplete="username" onChange={e => setEmail(e.target.value)} /><label htmlFor="server-password">Test account password</label><input id="server-password" type="password" value={password} required autoComplete="current-password" onChange={e => setPassword(e.target.value)} /><button className="ri-button ri-primary" disabled={busy || locked}>{busy ? 'Signing in…' : 'Sign in to local server'}</button></form></section> : <div id="server-content" tabIndex={-1} style={locked ? { display: 'none' } : undefined} inert={locked || undefined}><p className="ri-help">Signed in as {user.email}. Changes are saved only after the server confirms them.</p><div className="ri-server-desk">{record ? <ServerEditor attachmentLoad={client.attachment} previewAllowed={!locked} onAccessError={failure} key={`${user.id}:${record.id}`} record={record} onChange={change} dirtyRef={dirtyRef} workingCopy={work.current[`${user.id}:${record.id}`]} preserveCopy={copy => { const key = `${user.id}:${record.id}`; if (copy) work.current[key] = copy; else delete work.current[key]; }} embedded={embedded} onDirtyChange={onDirtyChange} onBusyChange={onBusyChange} /> : <section className="ri-empty"><h2>{embedded ? 'No review drafts yet' : 'No server drafts yet'}</h2><p>{embedded ? 'The controlled production queue is empty. No local or browser-only drafts are substituted.' : 'The local fixture has not been initialized. No browser-only drafts are imported automatically.'}</p><button className="ri-button ri-secondary" onClick={refresh}>Check again</button></section>}</div></div>}
     </div>
-  </main>;
+  </>;
+  return embedded
+    ? <section className="review-inbox ri-embedded" aria-label="Studio review inbox">{content}</section>
+    : <main className="review-inbox">{content}</main>;
 }
