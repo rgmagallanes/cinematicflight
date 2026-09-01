@@ -1,0 +1,17 @@
+{
+  "title": "Cinematic Flight — Your website should too",
+  "date": "2026-08-31",
+  "status": "draft_for_owner_review_not_published",
+  "output": "cinematic-flight-facebook-ad-1080x1350.png",
+  "dimensions": { "width": 1080, "height": 1350 },
+  "editableSource": "ad.html",
+  "copy": "ad-copy.md",
+  "route": "deterministic HTML/CSS composition of existing brand and photographic assets",
+  "export": "Browser proof captured at 864x1080 and resampled to 1080x1350 to accommodate the preview screenshot height limit",
+  "sourceAssets": [
+    "public/assets/property/good-food-farm-dusk.jpg",
+    "public/assets/brand/cinematic-flight-logo-concept-v1.png"
+  ],
+  "photographTreatment": "Proportional fit only; no synthetic scenery or retouching",
+  "publicationChecks": ["Confirm paid-ad photography permission", "Connect Facebook Page messaging destination"]
+}
