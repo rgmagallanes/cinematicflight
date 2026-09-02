@@ -1,0 +1,345 @@
+{
+  "name": "Cinematic Flight — Prospect Booking",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cinematic-flight/prospect-booking",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "4a6e9336-37e8-489d-b54a-0d9ed4c8fbd8",
+      "name": "Booking webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-1040, 80],
+      "webhookId": "ce923cec-cb96-4dba-bafe-41017850ea6c"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $json.body ?? $json;\nconst errors = [];\nconst text = (value, max) => typeof value === 'string' ? value.trim().slice(0, max) : '';\nconst name = text(input.name, 100);\nconst email = text(input.email, 254).toLowerCase();\nconst property = text(input.property, 160);\nconst purpose = text(input.purpose, 80);\nconst start = text(input.start, 40);\nconst end = text(input.end, 40);\nconst timezone = text(input.timezone, 60) || 'Asia/Manila';\nconst requestId = text(input.requestId, 100);\nconst allowedPurposes = ['Photograph reading', 'New property website', 'Add the cinematic experience'];\nif (!name) errors.push('Name is required.');\nif (!email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) errors.push('A valid email is required.');\nif (!allowedPurposes.includes(purpose)) errors.push('Choose a valid conversation type.');\nif (!requestId) errors.push('A request ID is required.');\nconst startDate = new Date(start);\nconst endDate = new Date(end);\nif (!start || Number.isNaN(startDate.getTime())) errors.push('A valid start time is required.');\nif (!end || Number.isNaN(endDate.getTime()) || endDate <= startDate) errors.push('A valid end time is required.');\nif (timezone !== 'Asia/Manila') errors.push('The booking timezone must be Asia/Manila.');\nreturn [{ json: { valid: errors.length === 0, errors, requestId, name, email, property, purpose, start, end, timezone, receivedAt: new Date().toISOString(), source: 'cinematicflight.com/book' } }];"
+      },
+      "id": "6eaa20ce-78f4-47d7-b523-e629d261e8d9",
+      "name": "Validate and normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-816, 80]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "96ebebbf-b9ea-4f9a-94bd-cefe674eead8",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ce10492f-d3f6-4d82-b4d6-b6cfbb08d856",
+      "name": "Valid payload?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-592, 80]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, code: 'INVALID_BOOKING', errors: $json.errors }) }}",
+        "options": {
+          "responseCode": 422
+        }
+      },
+      "id": "91f5bdb8-6b3a-49f5-8399-3d0705a91e35",
+      "name": "Reject invalid request",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [-352, 256]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "REPLACE_WITH_BOOKING_CALENDAR_ID",
+          "mode": "id"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $json.start }}",
+        "timeMax": "={{ $json.end }}",
+        "options": {}
+      },
+      "id": "01c87927-1dce-476e-8542-e4b56b185b9c",
+      "name": "Check calendar conflicts",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [-352, 0],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const booking = $('Validate and normalize').first().json;\nconst conflicts = $input.all().filter((item) => item.json && item.json.id);\nreturn [{ json: { ...booking, available: conflicts.length === 0, conflictCount: conflicts.length } }];"
+      },
+      "id": "fd7895bd-a74e-4fd6-83d1-9ca724a4fb5e",
+      "name": "Confirm availability",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-112, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8d44afad-b16d-490e-9965-bbc4e4563d52",
+              "leftValue": "={{ $json.available }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1a1f344c-27f4-4c9d-8a8b-a214c053238b",
+      "name": "Time available?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [112, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, code: 'TIME_UNAVAILABLE', requestId: $json.requestId, message: 'That time is no longer available. Please choose another slot.' }) }}",
+        "options": {
+          "responseCode": 409
+        }
+      },
+      "id": "2a49e251-b4ab-450a-94f8-2e25261bf7b1",
+      "name": "Return unavailable",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [352, 184]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "REPLACE_WITH_BOOKING_CALENDAR_ID",
+          "mode": "id"
+        },
+        "start": "={{ $json.start }}",
+        "end": "={{ $json.end }}",
+        "additionalFields": {
+          "summary": "={{ 'Cinematic Flight conversation — ' + $json.name }}",
+          "description": "={{ 'Purpose: ' + $json.purpose + '\\nProperty: ' + ($json.property || 'Not provided') + '\\nEmail: ' + $json.email + '\\nRequest ID: ' + $json.requestId + '\\nSource: ' + $json.source }}",
+          "attendees": [
+            "={{ $json.email }}"
+          ],
+          "sendUpdates": "all"
+        }
+      },
+      "id": "3d0d0bd5-5561-4f88-9019-66c99b994332",
+      "name": "Create calendar event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [352, -80]
+    },
+    {
+      "parameters": {
+        "jsCode": "const booking = $('Confirm availability').first().json;\nconst event = $json;\nreturn [{ json: { ...booking, eventId: event.id || '', eventLink: event.htmlLink || '', calendarCreated: Boolean(event.id), createdAt: new Date().toISOString() } }];"
+      },
+      "id": "4126e296-2bfc-4280-bccf-706f63c52c84",
+      "name": "Assemble booking result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [576, -80]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brevo.com/v3/smtp/email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { sender: { name: 'Cinematic Flight', email: 'REPLACE_WITH_VERIFIED_BREVO_SENDER' }, to: [{ email: $json.email, name: $json.name }], subject: 'Your Cinematic Flight conversation', textContent: 'Hello ' + $json.name + ',\\n\\nYour conversation is booked for ' + $json.start + ' (' + $json.timezone + ').\\n\\nWe will discuss: ' + $json.purpose + '.\\n\\nYour photographs are optional for this first conversation.\\n\\n— Cinematic Flight' } }}",
+        "options": {}
+      },
+      "id": "eb490009-8596-4649-aa5f-b03583396f39",
+      "name": "Email prospect through Brevo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [800, -80],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brevo.com/v3/smtp/email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { sender: { name: 'Cinematic Flight Studio', email: 'REPLACE_WITH_VERIFIED_BREVO_SENDER' }, to: [{ email: 'REPLACE_WITH_OWNER_EMAIL', name: 'Cinematic Flight owner' }], subject: 'New prospect booking — ' + $('Assemble booking result').first().json.name, textContent: $('Assemble booking result').first().json.name + ' booked a conversation.\\n\\nProperty: ' + ($('Assemble booking result').first().json.property || 'Not provided') + '\\nPurpose: ' + $('Assemble booking result').first().json.purpose + '\\nTime: ' + $('Assemble booking result').first().json.start + ' (' + $('Assemble booking result').first().json.timezone + ')\\nEmail: ' + $('Assemble booking result').first().json.email + '\\nRequest ID: ' + $('Assemble booking result').first().json.requestId } }}",
+        "options": {}
+      },
+      "id": "9a6ffd6a-0c29-4e5b-93ed-bef7dcf67cae",
+      "name": "Notify owner through Brevo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1024, -80],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Bookings",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "request_id": "={{ $('Assemble booking result').first().json.requestId }}",
+            "created_at": "={{ $('Assemble booking result').first().json.createdAt }}",
+            "name": "={{ $('Assemble booking result').first().json.name }}",
+            "email": "={{ $('Assemble booking result').first().json.email }}",
+            "property": "={{ $('Assemble booking result').first().json.property }}",
+            "purpose": "={{ $('Assemble booking result').first().json.purpose }}",
+            "start": "={{ $('Assemble booking result').first().json.start }}",
+            "end": "={{ $('Assemble booking result').first().json.end }}",
+            "timezone": "={{ $('Assemble booking result').first().json.timezone }}",
+            "event_id": "={{ $('Assemble booking result').first().json.eventId }}",
+            "event_link": "={{ $('Assemble booking result').first().json.eventLink }}",
+            "source": "={{ $('Assemble booking result').first().json.source }}"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "358becc6-4520-465d-963f-ed82743d128f",
+      "name": "Append booking audit row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [1248, -80],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, code: 'BOOKING_CREATED', requestId: $('Assemble booking result').first().json.requestId, eventId: $('Assemble booking result').first().json.eventId, start: $('Assemble booking result').first().json.start, end: $('Assemble booking result').first().json.end, timezone: $('Assemble booking result').first().json.timezone }) }}",
+        "options": {
+          "responseCode": 201
+        }
+      },
+      "id": "e47e7c68-1180-4e5e-a59c-98552e4bcbbc",
+      "name": "Return booking confirmation",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [1472, -80]
+    },
+    {
+      "parameters": {
+        "content": "## Keep inactive until test credentials are connected\n\nRequired credentials:\n- Webhook Header Auth\n- Google Calendar OAuth2\n- Brevo HTTP Header Auth (`api-key`)\n- Google Sheets OAuth2\n\nReplace every `REPLACE_WITH_...` value before testing. The public browser must not call this webhook directly; use a same-origin server relay that adds the private webhook credential.",
+        "height": 320,
+        "width": 420
+      },
+      "id": "c59c7b8d-b26b-46cb-a818-fd3a57f06484",
+      "name": "Activation gate",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-1040, -400]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Booking webhook": {
+      "main": [[{"node": "Validate and normalize", "type": "main", "index": 0}]]
+    },
+    "Validate and normalize": {
+      "main": [[{"node": "Valid payload?", "type": "main", "index": 0}]]
+    },
+    "Valid payload?": {
+      "main": [
+        [{"node": "Check calendar conflicts", "type": "main", "index": 0}],
+        [{"node": "Reject invalid request", "type": "main", "index": 0}]
+      ]
+    },
+    "Check calendar conflicts": {
+      "main": [[{"node": "Confirm availability", "type": "main", "index": 0}]]
+    },
+    "Confirm availability": {
+      "main": [[{"node": "Time available?", "type": "main", "index": 0}]]
+    },
+    "Time available?": {
+      "main": [
+        [{"node": "Create calendar event", "type": "main", "index": 0}],
+        [{"node": "Return unavailable", "type": "main", "index": 0}]
+      ]
+    },
+    "Create calendar event": {
+      "main": [[{"node": "Assemble booking result", "type": "main", "index": 0}]]
+    },
+    "Assemble booking result": {
+      "main": [[{"node": "Email prospect through Brevo", "type": "main", "index": 0}]]
+    },
+    "Email prospect through Brevo": {
+      "main": [[{"node": "Notify owner through Brevo", "type": "main", "index": 0}]]
+    },
+    "Notify owner through Brevo": {
+      "main": [[{"node": "Append booking audit row", "type": "main", "index": 0}]]
+    },
+    "Append booking audit row": {
+      "main": [[{"node": "Return booking confirmation", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Manila",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "versionId": "5a7a6f86-2bb3-45fb-aaee-ae18ca0d66e5",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

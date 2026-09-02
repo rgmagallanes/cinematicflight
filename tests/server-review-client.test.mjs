@@ -49,7 +49,7 @@ test('server review route and fixture initialization remain isolated', () => {
   const main=readFileSync('src/main.jsx','utf8');
   assert.match(main,/import\.meta\.env\.DEV && __LOCAL_REVIEW_SERVER__/);
   const config=readFileSync('vite.config.mjs','utf8');
-  assert.match(config,/mode === 'review'/); assert.match(config,/127\.0\.0\.1:5183/);
+  assert.match(config,/mode === ["']review["']/); assert.match(config,/127\.0\.0\.1:5183/);
   const compose=readFileSync('ops/review-local/compose.yaml','utf8');
   assert.match(compose,/127\.0\.0\.1:5183:8080/); assert.match(compose,/internal: true/);
   assert.match(compose,/cinematicflight_review_local_data/);
