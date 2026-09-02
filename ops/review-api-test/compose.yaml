@@ -26,7 +26,7 @@ services:
     tmpfs:
       - /run/review-private
     networks: [test]
-    command: [sh, -c, 'php tests/review-api-integration.php && php tests/review-ingestion-integration.php']
+    command: [sh, -c, 'php tests/review-api-integration.php && php tests/review-ingestion-integration.php && php tests/prospecting-api-integration.php']
 networks:
   test:
     internal: true
