@@ -30,6 +30,9 @@ coverage/
 # Vite cache
 .vite/
 
+# Local advertising materials
+/ads/
+
 # Hostinger database credentials
 public/api/config.php
 
