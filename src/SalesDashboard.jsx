@@ -307,15 +307,65 @@ function PipelineView({ inquiries, openInquiry }) {
 }
 
 function CalendarView({ inquiries, openInquiry }) {
+  const [activeInquiryId, setActiveInquiryId] = useState(inquiries[2]?.id || inquiries[0]?.id);
+  const [purpose, setPurpose] = useState("Add a cinematic view to our website");
+  const [day, setDay] = useState(24);
+  const [time, setTime] = useState("11:00 AM");
+  const [notice, setNotice] = useState("");
+  const activeInquiry = inquiries.find((item) => item.id === activeInquiryId) || inquiries[0];
+  const purposes = ["A reading of our photographs", "A new property website", "Add a cinematic view to our website"];
+  const calendarDays = [{ day: 31, outside: true }, ...Array.from({ length: 30 }, (_, index) => ({ day: index + 1 })), { day: 1, outside: true }, { day: 2, outside: true }, { day: 3, outside: true }, { day: 4, outside: true }];
+  const availableDays = [3, 4, 8, 10, 15, 17, 22, 24, 25, 29];
+  const slots = ["9:00 AM", "11:00 AM", "2:00 PM", "4:00 PM"];
+  const selectedDate = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).format(new Date(2026, 8, day));
+
+  const prepareBooking = () => {
+    setNotice(`Draft held for ${activeInquiry.contact} on ${selectedDate} at ${time}. Nothing has been sent.`);
+  };
+
   return (
     <>
-      <PageHeader title="Follow-ups" copy="A calm view of today, upcoming work and overdue conversations." />
-      <section className="calendar-list">
-        <header><span>Friday</span><strong>28</strong><p>August 2026</p></header>
-        <div>
-          {inquiries.slice(0, 4).map((inquiry) => (
-            <button type="button" key={inquiry.id} onClick={() => openInquiry(inquiry)}><time>{inquiry.due}</time><span><strong>{inquiry.next}</strong><small>{inquiry.property}</small><ActionStatus value={inquiry.actionStatus} /></span><Status stage={inquiry.stage} /></button>
-          ))}
+      <div className="appointment-date-stamp"><span>Tuesday, September 1, 2026</span><b>Today</b></div>
+      <section className="appointment-desk">
+        <div className="appointment-entry">
+          <h2>Choose a conversation.</h2>
+          <p>Select an enquiry, clarify what the prospect wants to discuss, and hold a suitable time.</p>
+          <label className="appointment-enquiry-select">Prospect enquiry
+            <select value={activeInquiryId} onChange={(event) => { setActiveInquiryId(Number(event.target.value)); setNotice(""); }}>
+              {inquiries.map((inquiry) => <option value={inquiry.id} key={inquiry.id}>{inquiry.contact} · {inquiry.property}</option>)}
+            </select>
+          </label>
+          <dl className="appointment-prospect-details">
+            <div><dt>Your name</dt><dd>{activeInquiry.contact}</dd></div>
+            <div><dt>Property or business</dt><dd>{activeInquiry.property}</dd></div>
+            <div><dt>Email address</dt><dd>{activeInquiry.email}</dd></div>
+          </dl>
+          <fieldset className="appointment-purpose">
+            <legend>What would they like to discuss?</legend>
+            {purposes.map((item) => <label className={purpose === item ? "is-selected" : ""} key={item}><input type="radio" name="studio-purpose" checked={purpose === item} onChange={() => setPurpose(item)} /><span>{item}</span><Circle size={20} weight={purpose === item ? "fill" : "regular"} /></label>)}
+          </fieldset>
+          <button className="text-action appointment-open-enquiry" type="button" onClick={() => openInquiry(activeInquiry)}>Open full enquiry <ArrowRight size={16} /></button>
+        </div>
+
+        <div className="appointment-calendar">
+          <section aria-labelledby="appointment-month-title">
+            <header><span>Select a date</span><h2 id="appointment-month-title">September 2026</h2></header>
+            <div className="appointment-weekdays" aria-hidden="true">{["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => <span key={label}>{label}</span>)}</div>
+            <div className="appointment-days">
+              {calendarDays.map((item, index) => {
+                const available = !item.outside && availableDays.includes(item.day);
+                const today = !item.outside && item.day === 1;
+                return <button type="button" key={`${item.day}-${index}`} disabled={!available} className={`${item.outside ? "is-outside" : ""} ${day === item.day && !item.outside ? "is-selected" : ""}`} onClick={() => { setDay(item.day); setNotice(""); }}><span>{item.day}</span>{today && <small>Today</small>}</button>;
+              })}
+            </div>
+          </section>
+          <fieldset className="appointment-times"><legend>Select a time (Asia/Manila)</legend><div>{slots.map((slot) => <label className={time === slot ? "is-selected" : ""} key={slot}><input type="radio" name="studio-time" checked={time === slot} onChange={() => { setTime(slot); setNotice(""); }} /><span>{slot}</span></label>)}</div><small>30 minutes · Asia/Manila</small></fieldset>
+          <section className="appointment-summary">
+            <h2>Booking summary</h2>
+            <dl><div><dt>Prospect</dt><dd>{activeInquiry.contact} · {activeInquiry.property}</dd></div><div><dt>Conversation</dt><dd>{purpose}</dd></div><div><dt>Date</dt><dd>{selectedDate}</dd></div><div><dt>Time</dt><dd>{time} (Asia/Manila)</dd></div></dl>
+            <button className="primary-action" type="button" onClick={prepareBooking}>Review booking</button>
+            {notice && <p className="appointment-notice" role="status">{notice}</p>}
+          </section>
         </div>
       </section>
     </>
@@ -761,7 +811,14 @@ function AddInquiryDialog({ onAdd, onClose }) {
 }
 
 export function SalesDashboard({ cloudUser = null, onSignOut = null, onSessionExpired = null, reviewWorkStore = null }) {
-  const [activeView, setActiveView] = useState(() => cloudUser && window.location.pathname === '/review-inbox' ? 'review' : 'home');
+  const [activeView, setActiveView] = useState(() => {
+    if (cloudUser && window.location.pathname === '/review-inbox') return 'review';
+    if (!cloudUser) {
+      const requestedView = new URLSearchParams(window.location.search).get('view');
+      if (navItems.some((item) => item.id === requestedView)) return requestedView;
+    }
+    return 'home';
+  });
   const [inquiries, setInquiries] = useState(() => {
     try { return JSON.parse(localStorage.getItem("cinematic-flight-inquiries-v1")) || initialInquiries; } catch { return initialInquiries; }
   });

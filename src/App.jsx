@@ -591,6 +591,7 @@ export function App() {
         <div className="contact-copy">
           <h2>Start with a reading.</h2>
           <p>Send the property and the photographs you already have. We’ll tell you whether they can carry a flight, and what it would take — before anything is designed or agreed.</p>
+          <a className="contact-booking-link" href="/book">Prefer to talk? Book a conversation <span aria-hidden="true">→</span></a>
         </div>
         <InquiryForm />
       </section>

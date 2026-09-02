@@ -65,6 +65,11 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 
 ## Studio sales workflow decisions
 
+- Use the selected “Editorial Appointment Desk” direction for the private Studio Calendar: enquiry-linked prospect details and conversation choices sit beside the date, time, and booking summary.
+- Use the selected “Calendar-First Invitation” direction for the public prospect booking route at `/book`: a signed-in identity summary, conversation choice, calendar, available Manila-time slots, review, and an explicit server-confirmed receipt. Do not show success until the same-origin booking relay accepts the request. Keep it visually and operationally separate from the owner-only Studio.
+- Require the prospect's name and email before the public booking calendar is available. Keep property or business optional, preserve the entered values when validation fails, and show persistent inline recovery text for missing or invalid required fields.
+- Keep the prospect-booking n8n workflow inactive until a same-origin, rate-limited relay adds private Header Auth, request IDs are stored idempotently, and test Google Calendar, Brevo, and Google Sheets credentials pass invalid, conflict, duplicate, and success checks. Never expose the n8n webhook or credential in browser code.
+
 - Show approved review drafts with a clearly green status label and readable contrasting text. Keep the written approval status visible; green indicates approval, not that an email was sent.
 - Show email attachments alongside the review enquiry with names, types, sizes and an explicit not-reviewed state. Open supported files inside the app with keyboard navigation, Escape, focus containment/restoration and private authenticated access. Viewing must not imply approval, malware clearance or AI analysis; unsupported types remain listed, not executed.
 - Every enquiry must carry two separate operational signals: its sales stage and its next-action status.

@@ -1124,6 +1124,21 @@ footer a:hover { text-decoration-color: currentColor; }
   color: #bec9bf;
 }
 
+.contact-booking-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-bottom: 0.35rem;
+  color: #f3c778;
+  border-bottom: 1px solid rgba(243, 199, 120, 0.55);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
 .inquiry-form {
   display: grid;
   grid-template-columns: 1fr 1fr;

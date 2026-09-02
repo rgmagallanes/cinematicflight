@@ -1,80 +1,64 @@
-# Cinematic Flight Property Files design QA
+# Design QA — Appointment Desk and Prospect Booking
 
-## Comparison target
+## Evidence
 
-- Source visual truth: `/Users/richard/Documents/cinematicflight/qa/design-reference-property-files-hybrid.png`.
-- Normalized source: `/Users/richard/Documents/cinematicflight/qa/design-reference-property-files-hybrid-1440x1024.png`.
-- Final browser-rendered implementation: `/Users/richard/Documents/cinematicflight/qa/implementation-property-files-final.png`.
-- Final side-by-side evidence: `/Users/richard/Documents/cinematicflight/qa/design-qa-property-files-final.png`.
+- Studio source visual truth: `/Users/richard/.codex/generated_images/01a05b5b-3d74-76f0-a428-1309b60f7466/exec-b4fbe705-afb3-4df4-ae18-0b716364e617.png`
+- Prospect source visual truth: `/Users/richard/.codex/generated_images/01a05b5b-3d74-76f0-a428-1309b60f7466/exec-dfd66211-6fd1-452f-900f-0163701a9a9c.png`
+- Studio implementation screenshot: `qa/implementation-appointment-desk-viewport-raw.png`
+- Prospect implementation screenshot: `qa/implementation-booking-viewport-raw.png`
+- Studio combined comparison: `qa/compare-appointment-source-implementation-final.png`
+- Prospect combined comparison: `qa/compare-booking-source-implementation-final.png`
+- Browser-rendered viewport: 1440 × 1024 CSS pixels.
+- Source pixels: 1487 × 1058 for each generated mock. Sources were normalized to 1440 × 1024 for comparison.
+- Implementation pixels: 1440 × 1024. No implementation density resampling was needed.
+- State: Studio Calendar with The Banyan Estate, cinematic-view purpose, September 24 and 11:00 AM selected; public `/book` with photograph reading, September 4 and 11:00 AM selected.
 
-## Viewport and normalization
+## Full-view comparison evidence
 
-- Source image: 1487 × 1058 pixels, normalized to 1440 × 1024 for direct comparison.
-- Implementation: 1440 × 1024 CSS pixels at device density 1.
-- Side-by-side comparison: 2880 × 1024 pixels.
-- State: Property Files, The Banyan Estate, Property reading, Draft version 1.
+Both final combined comparisons place the source and rendered implementation in the same 2880 × 1024 artifact. The implementations preserve the source hierarchy, split proportions, forest-night/mineral-paper atmosphere, Bodoni and operational sans-serif roles, hairline separation, calendar density, selected date/time states, and bottom booking summary.
+
+The public implementation intentionally omits the mock's generated botanical line illustration because the project's approved direction prohibits synthetic or illustrated imagery on the public site. The dark field remains intentionally quiet rather than replacing it with an unapproved asset. The Studio implementation retains the real application navigation labels and adds an enquiry selector because appointments must stay linked to existing enquiries.
+
+## Focused region comparison evidence
+
+No separate focused crop was required. At the normalized 1440 × 1024 scale, the prospect identity, purpose controls, calendar cells, time choices, summary copy, Studio enquiry selector, and primary actions remain legible in the combined artifacts.
 
 ## Required fidelity surfaces
 
-- Layout: the implementation preserves the selected four-part anatomy: forest-night primary navigation, lead-linked property cabinet, dominant editorial reading desk, and a supporting sales-context rail.
-- Hierarchy: the property name and document journey sit above a quiet formatting bar; the reading title and three editable sections remain the primary work surface; sales actions are restrained at the bottom.
-- Typography: Bodoni Moda carries property and document titles while the existing Avenir/Futura stack carries operational labels, controls, file metadata, and status copy.
-- Tokens: mineral paper, botanical ink, muted sage, forest night, scarce quiet brass, and hairline separators match the approved dashboard system.
-- Assets: the approved transparent Cinematic Flight logo is reused directly. The selected screen requires no property photography, so no synthetic imagery or placeholder raster assets were introduced. Interface symbols use Phosphor Icons.
-- Content: source-material filenames remain references to local property files; the prototype does not imply cloud storage, CRM synchronization, live email, or a production document backend.
-
-## Functional verification
-
-- Switching from The Banyan Estate to Riverstone Lodge updates the property, source material, document set, progress, and sales context.
-- “Back to all files” opens the cross-property library and returns to the active reading.
-- Editing document content updates the local working copy; the test content was restored.
-- “Save version” advanced the test-origin document to version 2 and showed a local-save status.
-- “Mark reading ready” updated the test-origin reading to Ready.
-- “View enquiry” opened and closed the linked enquiry panel.
-- “View in pipeline” navigated to the pipeline view.
-- A fresh interaction-test tab reported no console warnings or errors.
-- The final 1440 × 1024 view has no horizontal or vertical page overflow.
+- Fonts and typography: Passed. Bodoni Moda is limited to editorial headings and calendar emphasis; the existing Avenir/Futura stack carries labels, fields, actions, and operational copy. No clipping or unsafe negative tracking was found.
+- Spacing and layout rhythm: Passed. Both screens preserve the source split layout, generous dark-field spacing, hairline grouping, and calendar-to-summary rhythm. The Studio desk now fits within the first 1024px viewport.
+- Colors and visual tokens: Passed. Forest night, mineral paper, botanical ink, quiet/signature brass, sage, and cool focus are used consistently without gradients or shadows.
+- Image quality and asset fidelity: Passed. The approved transparent brand logo is used directly. No placeholder, CSS-drawn, or generated property imagery was introduced.
+- Copy and content: Passed. Prospect and Studio language clearly distinguish a conversation booking from a property guest reservation. The public review explains that availability is checked before creation, and confirmation appears only after the same-origin relay accepts the booking.
+- Accessibility and interaction: Passed. Fields have labels, choice groups use radio controls, unavailable calendar days are disabled, selected states remain visible, keyboard focus is explicit, and the main booking path has review and success states.
+- Responsive behavior: Passed. At 390 × 844 the public booking route reports 390px document width with zero horizontal overflow; the layout becomes a readable single-column flow.
 
 ## Comparison history
 
-### Pass 1
+### Pass 1 — blocked
 
-- Evidence: `/Users/richard/Documents/cinematicflight/qa/design-qa-property-files-pass-1.png`.
-- [P2] The reading content ended too early, leaving the action row materially higher than the reference. Fixed by restoring the source’s deliberate lower-page whitespace and anchoring the actions at the viewport bottom.
-- [P2] The action footer inherited the public site’s dark footer treatment. Fixed with an explicit mineral-paper workspace footer and brass primary action.
-- [P2] The document-journey header was approximately 50 pixels shallower than the selected mockup. Fixed by matching its vertical breathing room while preserving the progress position.
+- P2: The Studio's ordinary page header added a second editorial layer and pushed the booking action below the initial viewport.
+- P2: The public action used a pill and shortened label that drifted from the selected mock.
+- P2: The compact public selection footer extended the document by 8px horizontally.
 
-### Final pass
+Fixes made: removed the extra Studio page header, moved the date stamp into a compact top row, changed the public action to a square `Review and confirm` control, and aligned the compact footer margins to the 20px mobile gutter.
 
-- Evidence: `/Users/richard/Documents/cinematicflight/qa/design-qa-property-files-final.png`.
-- The normalized comparison shows matching major-region proportions, header depth, reading-title position, section sequence, lower-page whitespace, action placement, and contextual-rail density.
-- No actionable P0, P1, or P2 difference remains.
+### Pass 2 — passed
 
-## Build verification
+Post-fix evidence shows the Studio desk ending at 988.6px inside the 1024px viewport, the public action matching the selected source anatomy, and the 390px compact document reporting zero horizontal overflow. No actionable P0, P1, or P2 differences remain.
 
-- `npm run build`: passed; generated `dist/client/index.html`, `dist/server/index.js`, and `dist/.openai/hosting.json`.
-- `npm run test:sites`: passed, 4 tests and 0 failures.
-- `git diff --check`: passed.
+## Findings
+
+No actionable P0, P1, or P2 findings remain.
 
 ## Follow-up polish
 
-- P3: the local prototype stores document edits and versions in browser local storage. Shared folders, authentication, permissions, file upload, and durable server-side revision history remain future integrations.
-- P3: compact breakpoint rules are implemented for a stacked cabinet, editor, and context rail; the approved mockup and current fidelity gate are desktop-first.
+- P3: A future approved real botanical or property-derived asset could occupy the quiet dark-field space in the public booking screen, but leaving it empty is more truthful than using synthetic decoration.
 
-## Import workflow extension
+## Verification
 
-- Final compact-browser evidence: `/Users/richard/Documents/cinematicflight/qa/implementation-property-import-final.png` at 745 × 791 CSS pixels.
-- The compact importer has no horizontal overflow (`innerWidth: 745`, `scrollWidth: 745`) and collapses the folder tree while importing so the file controls remain immediately reachable.
-- A TXT file was imported through the browser file chooser, converted into an editable document, persisted under the selected property, and verified with its complete text intact.
-- Invalid Google Sheets links produce a persistent, actionable inline error. Public/published Google Sheets links are supported; private account access is explicitly not implied.
-- Word and spreadsheet parsers are loaded only after the relevant import action, keeping the initial dashboard bundle near its previous size.
-- The Impeccable detector reported advisory design-token drift across the existing dashboard stylesheet but no new blocking interface anti-pattern.
-
-## Imported-document reading refinement
-
-- Compact reading evidence: `/Users/richard/Documents/cinematicflight/qa/implementation-imported-reading-compact.png` at 745 pixels wide.
-- Imported document text now renders at 16px with a 28.48px line height in the compact browser and expands to the document’s complete scroll height instead of clipping inside a fixed textarea.
-- The property cabinet collapses while reading and returns through a 44-pixel Property Files control; opening the cabinet and selecting the document again were browser-tested.
-- The compact reader reported `scrollWidth: 745` at `innerWidth: 745`, with no console warnings or errors.
+- Primary interactions tested: change/cancel prospect details, choose purpose, choose available day, choose time, open review, submit through the same-origin relay, show the server-confirmed receipt, select a Studio enquiry, and prepare a draft booking.
+- Operational integration: a local end-to-end test reached n8n and completed the configured Calendar, Brevo, and Sheets path. Production still requires a public HTTPS n8n endpoint, dynamic availability, and partial-failure hardening.
+- Browser console: no errors or warnings during the tested flows.
 
 final result: passed
