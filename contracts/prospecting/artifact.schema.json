@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/artifact.schema.json",
+  "title": "Internal Prospect Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "prospect_id", "type", "version", "content", "source_qualification_id", "delivery_status", "created_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "prospect_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "type": { "enum": ["WALKTHROUGH_CONCEPT", "OUTREACH_DRAFT"] },
+    "version": { "type": "integer", "minimum": 1 },
+    "content": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 20000 }, { "type": "object" }] },
+    "source_qualification_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "delivery_status": { "const": "INTERNAL_UNSENT", "description": "Phase 1 artifacts cannot authorize or execute outreach." },
+    "created_at": { "$ref": "./common.schema.json#/$defs/timestamp" }
+  }
+}

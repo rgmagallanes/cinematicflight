@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/promotion.schema.json",
+  "title": "Prospect Studio Promotion Link",
+  "description": "Contract only. Phase 1 does not perform Studio insertion.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "prospect_id", "studio_inquiry_id", "approval_id", "created_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "prospect_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "studio_inquiry_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "approval_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "created_at": { "$ref": "./common.schema.json#/$defs/timestamp" }
+  }
+}

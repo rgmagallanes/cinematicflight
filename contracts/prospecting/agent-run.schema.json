@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/agent-run.schema.json",
+  "title": "Prospecting Agent Run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "public_id", "mission_id", "prospect_id", "status", "started_at", "completed_at", "stop_reason", "step_count", "llm_call_count", "research_duration_ms", "created_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "public_id": { "allOf": [{ "$ref": "./common.schema.json#/$defs/publicId" }, { "pattern": "^agent-run_" }] },
+    "mission_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "prospect_id": { "anyOf": [{ "$ref": "./common.schema.json#/$defs/databaseId" }, { "type": "null" }] },
+    "status": { "enum": ["PENDING", "RUNNING", "COMPLETED", "STOPPED", "FAILED"] },
+    "started_at": { "anyOf": [{ "$ref": "./common.schema.json#/$defs/timestamp" }, { "type": "null" }] },
+    "completed_at": { "anyOf": [{ "$ref": "./common.schema.json#/$defs/timestamp" }, { "type": "null" }] },
+    "stop_reason": { "type": ["string", "null"], "enum": ["QUALIFIED", "DISQUALIFIED", "INSUFFICIENT_EVIDENCE", "BUDGET_LIMIT", "STEP_LIMIT", "PAGE_LIMIT", "LLM_LIMIT", "TIME_LIMIT", "TOOL_LIMIT", "REPEATED_ACTION", "DUPLICATE", "HUMAN_APPROVAL_REQUIRED", "TOOL_FAILURE", "FAILED", null] },
+    "step_count": { "type": "integer", "minimum": 0 },
+    "llm_call_count": { "type": "integer", "minimum": 0 },
+    "research_duration_ms": { "type": "integer", "minimum": 0 },
+    "created_at": { "$ref": "./common.schema.json#/$defs/timestamp" }
+  }
+}

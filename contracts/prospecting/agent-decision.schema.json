@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/agent-decision.schema.json",
+  "title": "Auditable Agent Decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "agent_run_id", "step_number", "action", "reason", "target", "expected_information", "authority_result", "budget_result", "estimated_cost_centavos", "actual_cost_centavos", "confidence", "state_before", "state_after", "created_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "agent_run_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "step_number": { "type": "integer", "minimum": 1 },
+    "action": { "enum": ["DISCOVER_MORE", "INSPECT_WEBSITE", "INSPECT_PAGE", "DETECT_EXISTING_EXPERIENCE", "FIND_CONTACT", "ANALYZE_EXPERIENCE_GAP", "CALCULATE_SCORE", "GENERATE_WALKTHROUGH", "DRAFT_OUTREACH", "SAVE_EVIDENCE", "SAVE_PROSPECT", "QUALIFY", "DISQUALIFY", "REQUEST_APPROVAL", "STOP_INSUFFICIENT_EVIDENCE", "STOP_BUDGET_LIMIT", "STOP_TOOL_LIMIT", "STOP_REPEATED_ACTION", "STOP_DUPLICATE"] },
+    "reason": { "type": "string", "minLength": 1, "maxLength": 5000 },
+    "target": { "type": ["string", "null"], "maxLength": 2048 },
+    "expected_information": { "type": ["string", "null"], "maxLength": 5000 },
+    "authority_result": { "enum": ["ALLOWED", "DENIED", "HUMAN_APPROVAL_REQUIRED", "NOT_EVALUATED"] },
+    "budget_result": { "enum": ["ALLOWED", "ALLOW_FREE", "DENIED", "NOT_APPLICABLE", "NOT_EVALUATED"] },
+    "estimated_cost_centavos": { "$ref": "./common.schema.json#/$defs/centavos" },
+    "actual_cost_centavos": { "anyOf": [{ "$ref": "./common.schema.json#/$defs/centavos" }, { "type": "null" }] },
+    "confidence": { "$ref": "./common.schema.json#/$defs/confidence" },
+    "state_before": { "type": "object" },
+    "state_after": { "type": "object" },
+    "created_at": { "$ref": "./common.schema.json#/$defs/timestamp" }
+  }
+}

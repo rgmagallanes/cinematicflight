@@ -11,6 +11,7 @@
     "test:sites": "node --test tests/sites-worker.test.mjs tests/hostinger-config-path.test.mjs",
     "test:booking": "node --test tests/booking-relay.test.mjs",
     "test:n8n": "node --test tests/n8n-booking-workflow.test.mjs",
+    "test:prospecting": "npm --prefix services/prospecting-agent test",
     "test:review": "node --test tests/review-inbox.test.mjs tests/server-review-client.test.mjs tests/server-review-ui.test.mjs tests/studio-review-navigation.test.mjs"
   },
   "dependencies": {

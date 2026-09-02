@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/prospect.schema.json",
+  "title": "Prospect",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "public_id", "owner_id", "business_name", "category", "address", "location", "website", "phone", "rating", "review_count", "external_source", "external_source_id", "normalized_domain", "contact_status", "status", "created_at", "updated_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "public_id": { "allOf": [{ "$ref": "./common.schema.json#/$defs/publicId" }, { "pattern": "^prospect_" }] },
+    "owner_id": { "$ref": "./common.schema.json#/$defs/ownerId" },
+    "business_name": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "category": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "address": { "type": ["string", "null"], "maxLength": 500 },
+    "location": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "website": { "type": ["string", "null"], "format": "uri", "maxLength": 2048 },
+    "phone": { "type": ["string", "null"], "maxLength": 80 },
+    "rating": { "type": ["number", "null"], "minimum": 0, "maximum": 5 },
+    "review_count": { "type": ["integer", "null"], "minimum": 0 },
+    "external_source": { "type": ["string", "null"], "maxLength": 120 },
+    "external_source_id": { "type": ["string", "null"], "maxLength": 255 },
+    "normalized_domain": { "type": ["string", "null"], "pattern": "^[a-z0-9.-]+$", "maxLength": 253 },
+    "contact_status": { "$ref": "./common.schema.json#/$defs/contactStatus" },
+    "status": { "enum": ["DISCOVERED", "RESEARCHING", "INSUFFICIENT_EVIDENCE", "DISQUALIFIED", "QUALIFIED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "PROMOTED_TO_STUDIO", "FAILED"] },
+    "created_at": { "$ref": "./common.schema.json#/$defs/timestamp" },
+    "updated_at": { "$ref": "./common.schema.json#/$defs/timestamp" }
+  }
+}

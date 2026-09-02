@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/approval.schema.json",
+  "title": "Prospecting Approval",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "prospect_id", "qualification_id", "action", "status", "payload_hash", "approved_by_owner_id", "created_at", "resolved_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "prospect_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "qualification_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "action": { "enum": ["APPROVE_PROSPECT", "REJECT_PROSPECT", "PROMOTE_TO_STUDIO", "APPROVE_OUTREACH"] },
+    "status": { "enum": ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] },
+    "payload_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "approved_by_owner_id": { "anyOf": [{ "$ref": "./common.schema.json#/$defs/ownerId" }, { "type": "null" }] },
+    "created_at": { "$ref": "./common.schema.json#/$defs/timestamp" },
+    "resolved_at": { "anyOf": [{ "$ref": "./common.schema.json#/$defs/timestamp" }, { "type": "null" }] }
+  }
+}
