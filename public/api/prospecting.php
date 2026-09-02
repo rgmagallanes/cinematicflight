@@ -496,16 +496,19 @@ function prospecting_create_cost(PDO $pdo,int $ownerId,array $body):array
     $actual=prospecting_integer($body,'actual_cost_centavos',0,null,false);
     $key=prospecting_text($body,'idempotency_key',190);
     if(!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{7,189}$/D',$key))throw new ProspectingError('Invalid idempotency_key.',422);
-    $existing=$pdo->prepare('select * from prospecting_cost_events where owner_id=? and idempotency_key=? limit 1');$existing->execute([$ownerId,$key]);$row=$existing->fetch();
-    if($row){
-        $same=(int)($row['mission_id']??0)===(int)($missionId??0)&&(int)($row['prospect_id']??0)===(int)($prospectId??0)&&(int)($row['agent_run_id']??0)===(int)($runId??0)&&$row['provider']===$provider&&$row['operation']===$operation&&(int)$row['estimated_cost_centavos']===$estimated&&($row['actual_cost_centavos']===null?$actual===null:(int)$row['actual_cost_centavos']===$actual);
-        if(!$same)throw new ProspectingError('The idempotency key is already bound to a different cost event.',409);
-        return prospecting_cost_row($row,true);
-    }
-    $publicId=prospecting_public_id('cost-event');
-    try{$statement=$pdo->prepare('insert into prospecting_cost_events(public_id,owner_id,mission_id,prospect_id,agent_run_id,provider,operation,estimated_cost_centavos,actual_cost_centavos,idempotency_key) values(?,?,?,?,?,?,?,?,?,?)');$statement->execute([$publicId,$ownerId,$missionId,$prospectId,$runId,$provider,$operation,$estimated,$actual,$key]);}
-    catch(PDOException $error){if($error->getCode()==='23000')throw new ProspectingError('The idempotency key is already in use.',409);throw $error;}
-    $existing=$pdo->prepare('select * from prospecting_cost_events where owner_id=? and public_id=?');$existing->execute([$ownerId,$publicId]);return prospecting_cost_row($existing->fetch(),false);
+    $pdo->beginTransaction();
+    try{
+        // Serialize browser-recorded costs with internal monthly reservations.
+        $owner=$pdo->prepare('select id from studio_users where id=? for update');$owner->execute([$ownerId]);if(!$owner->fetch())throw new ProspectingError('Owner not found.',401);
+        $existing=$pdo->prepare('select * from prospecting_cost_events where owner_id=? and idempotency_key=? limit 1 for update');$existing->execute([$ownerId,$key]);$row=$existing->fetch();
+        if($row){
+            $same=(int)($row['mission_id']??0)===(int)($missionId??0)&&(int)($row['prospect_id']??0)===(int)($prospectId??0)&&(int)($row['agent_run_id']??0)===(int)($runId??0)&&$row['provider']===$provider&&$row['operation']===$operation&&(int)$row['estimated_cost_centavos']===$estimated&&($row['actual_cost_centavos']===null?$actual===null:(int)$row['actual_cost_centavos']===$actual);
+            if(!$same)throw new ProspectingError('The idempotency key is already bound to a different cost event.',409);
+            $result=prospecting_cost_row($row,true);$pdo->commit();return $result;
+        }
+        $publicId=prospecting_public_id('cost-event');$statement=$pdo->prepare('insert into prospecting_cost_events(public_id,owner_id,mission_id,prospect_id,agent_run_id,provider,operation,estimated_cost_centavos,actual_cost_centavos,idempotency_key) values(?,?,?,?,?,?,?,?,?,?)');$statement->execute([$publicId,$ownerId,$missionId,$prospectId,$runId,$provider,$operation,$estimated,$actual,$key]);
+        $existing=$pdo->prepare('select * from prospecting_cost_events where owner_id=? and public_id=?');$existing->execute([$ownerId,$publicId]);$result=prospecting_cost_row($existing->fetch(),false);$pdo->commit();return $result;
+    }catch(Throwable $error){if($pdo->inTransaction())$pdo->rollBack();if($error instanceof PDOException&&$error->getCode()==='23000')throw new ProspectingError('The idempotency key is already in use.',409);throw $error;}
 }
 
 function prospecting_cost_row(array $row,bool $duplicate):array
@@ -521,10 +524,46 @@ function prospecting_cost_summary(PDO $pdo,int $ownerId,string $missionPublicId)
     return ['mission_public_id'=>$missionPublicId,'mission_budget_centavos'=>$budget,'estimated_cost_centavos'=>(int)$cost['estimated'],'actual_cost_centavos'=>$actual,'remaining_budget_centavos'=>max(0,$budget-$actual)];
 }
 
+function prospecting_read_runs(PDO $pdo,int $ownerId):array
+{
+    $params=[$ownerId];$where='r.owner_id=?';
+    if(isset($_GET['id'])){$where.=' and r.public_id=?';$params[]=prospecting_query_public_id('id','agent-run');}
+    if(isset($_GET['prospect_id'])){$prospect=prospecting_find($pdo,'prospecting_prospects',$ownerId,prospecting_query_public_id('prospect_id','prospect'));$where.=' and r.prospect_id=?';$params[]=$prospect['id'];}
+    if(isset($_GET['mission_id'])){$mission=prospecting_find($pdo,'prospecting_missions',$ownerId,prospecting_query_public_id('mission_id','mission'));$where.=' and r.mission_id=?';$params[]=$mission['id'];}
+    $query=$pdo->prepare("select r.public_id,m.public_id mission_public_id,p.public_id prospect_public_id,r.status,r.started_at,r.completed_at,r.stop_reason,r.step_count,r.llm_call_count,r.research_duration_ms,r.created_at,r.updated_at from prospecting_agent_runs r left join prospecting_missions m on m.id=r.mission_id and m.owner_id=r.owner_id join prospecting_prospects p on p.id=r.prospect_id and p.owner_id=r.owner_id where {$where} order by r.id desc");$query->execute($params);$rows=$query->fetchAll();
+    foreach($rows as &$row){$row['mission_id']=$row['mission_public_id'];$row['prospect_id']=$row['prospect_public_id'];unset($row['mission_public_id'],$row['prospect_public_id']);foreach(['step_count','llm_call_count','research_duration_ms'] as $field)$row[$field]=(int)$row[$field];}unset($row);return $rows;
+}
+
+function prospecting_read_decisions(PDO $pdo,int $ownerId,string $runPublicId):array
+{
+    $run=prospecting_find($pdo,'prospecting_agent_runs',$ownerId,$runPublicId);
+    $query=$pdo->prepare('select public_id,step_number,action,reason,target,expected_information,authority_result,budget_result,estimated_cost_centavos,actual_cost_centavos,confidence,state_before_json,state_after_json,governance_trace_json,created_at from prospecting_agent_decisions where owner_id=? and agent_run_id=? order by step_number');$query->execute([$ownerId,$run['id']]);$rows=$query->fetchAll();
+    foreach($rows as &$row){foreach(['step_number','estimated_cost_centavos'] as $field)$row[$field]=(int)$row[$field];$row['actual_cost_centavos']=$row['actual_cost_centavos']===null?null:(int)$row['actual_cost_centavos'];$row['confidence']=(float)$row['confidence'];foreach(['state_before','state_after','governance_trace'] as $field){$row[$field]=json_decode($row[$field.'_json'],true,128,JSON_THROW_ON_ERROR);unset($row[$field.'_json']);}}unset($row);return $rows;
+}
+
+function prospecting_read_artifacts(PDO $pdo,int $ownerId,string $prospectPublicId):array
+{
+    $prospect=prospecting_find($pdo,'prospecting_prospects',$ownerId,$prospectPublicId);$params=[$ownerId,$prospect['id']];$where='a.owner_id=? and a.prospect_id=?';
+    if(isset($_GET['id'])){$where.=' and a.public_id=?';$params[]=prospecting_query_public_id('id','artifact');}
+    if(isset($_GET['type'])){$type=(string)$_GET['type'];if(!in_array($type,['WALKTHROUGH_CONCEPT','OUTREACH_DRAFT'],true))throw new ProspectingError('Invalid artifact type.',422);$where.=' and a.type=?';$params[]=$type;}
+    if(isset($_GET['version'])){$version=filter_var($_GET['version'],FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);if($version===false)throw new ProspectingError('Invalid artifact version.',422);$where.=' and a.version=?';$params[]=$version;}
+    $query=$pdo->prepare("select a.public_id,q.public_id qualification_public_id,a.type,a.version,a.content,a.created_at from prospecting_artifacts a left join prospecting_qualifications q on q.id=a.qualification_id and q.owner_id=a.owner_id where {$where} order by a.type,a.version desc");$query->execute($params);$rows=$query->fetchAll();
+    foreach($rows as &$row){$content=json_decode($row['content'],true,128,JSON_THROW_ON_ERROR);$row['content']=$content['value'];$row['version']=(int)$row['version'];$row['delivery_status']='INTERNAL_UNSENT';}unset($row);return $rows;
+}
+
+function prospecting_read_reservations(PDO $pdo,int $ownerId):array
+{
+    $params=[$ownerId];$where='r.owner_id=?';
+    if(isset($_GET['id'])){$where.=' and r.public_id=?';$params[]=prospecting_query_public_id('id','reservation');}
+    if(isset($_GET['mission_id'])){$mission=prospecting_find($pdo,'prospecting_missions',$ownerId,prospecting_query_public_id('mission_id','mission'));$where.=' and r.mission_id=?';$params[]=$mission['id'];}
+    $query=$pdo->prepare("select r.public_id,m.public_id mission_public_id,p.public_id prospect_public_id,ar.public_id run_public_id,r.provider,r.operation,r.estimated_cost_centavos,r.reserved_cost_centavos,r.actual_cost_centavos,case when r.status='RESERVED' and r.expires_at<=utc_timestamp() then 'EXPIRED' else r.status end status,r.idempotency_key,r.expires_at,r.created_at,r.updated_at,r.committed_at,r.released_at from prospecting_budget_reservations r join prospecting_missions m on m.id=r.mission_id and m.owner_id=r.owner_id left join prospecting_prospects p on p.id=r.prospect_id and p.owner_id=r.owner_id left join prospecting_agent_runs ar on ar.id=r.agent_run_id and ar.owner_id=r.owner_id where {$where} order by r.id desc");$query->execute($params);$rows=$query->fetchAll();foreach($rows as &$row){foreach(['estimated_cost_centavos','reserved_cost_centavos'] as $field)$row[$field]=(int)$row[$field];$row['actual_cost_centavos']=$row['actual_cost_centavos']===null?null:(int)$row['actual_cost_centavos'];}unset($row);return $rows;
+}
+
 function prospecting_route(PDO $pdo,int $ownerId,string $action):void
 {
     $method=$_SERVER['REQUEST_METHOD'];
     try {
+        $pdo->exec("set time_zone='+00:00'");
         $write=in_array($method,['POST','PATCH','PUT','DELETE'],true);
         if($write)require_csrf();
         $body=$write?prospecting_request_body():[];
@@ -558,6 +597,10 @@ function prospecting_route(PDO $pdo,int $ownerId,string $action):void
         }
         if($action==='prospecting-cost-events'&&$method==='POST')respond(['cost_event'=>prospecting_create_cost($pdo,$ownerId,$body)],201);
         if($action==='prospecting-costs'&&$method==='GET')respond(['summary'=>prospecting_cost_summary($pdo,$ownerId,prospecting_query_public_id('mission_id','mission')),'csrfToken'=>csrf_token()]);
+        if($action==='prospecting-runs'&&$method==='GET')respond(['data'=>prospecting_read_runs($pdo,$ownerId),'csrfToken'=>csrf_token()]);
+        if($action==='prospecting-decisions'&&$method==='GET')respond(['data'=>prospecting_read_decisions($pdo,$ownerId,prospecting_query_public_id('run_id','agent-run')),'csrfToken'=>csrf_token()]);
+        if($action==='prospecting-artifacts'&&$method==='GET')respond(['data'=>prospecting_read_artifacts($pdo,$ownerId,prospecting_query_public_id('prospect_id','prospect')),'csrfToken'=>csrf_token()]);
+        if($action==='prospecting-reservations'&&$method==='GET')respond(['data'=>prospecting_read_reservations($pdo,$ownerId),'csrfToken'=>csrf_token()]);
         respond(['error'=>'Method not allowed.'],405);
     } catch(ProspectingError $error){respond(['error'=>$error->getMessage()],$error->getCode());}
     catch(Throwable $error){error_log('Studio prospecting API failed: '.get_class($error));respond(['error'=>'Prospecting storage is temporarily unavailable. No fallback was used.'],503);}

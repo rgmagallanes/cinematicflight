@@ -25,6 +25,15 @@ return [
     'review_import_owner_email' => '', // Existing Studio owner login email.
     'review_import_inquiry_id' => '', // Existing fictional enquiry external ID.
     'review_import_uid' => 0, // Exact positive UID of the designated test email.
+    // Phase 3.5 internal prospecting persistence. Keep disabled until both
+    // prospecting migrations are installed and the isolated test suite passes.
+    'prospecting_agent_ingest_enabled' => false,
+    'prospecting_agent_monthly_budget_centavos' => 200000,
+    // Per-owner service tokens. Use 64 lowercase hexadecimal characters.
+    // 'prospecting_agent_tokens' => [1 => 'current-token-for-owner-1'],
+    'prospecting_agent_tokens' => [],
+    // During rotation only: accept the old token briefly, then remove it.
+    'prospecting_agent_previous_tokens' => [],
     // Separate, optional attachment preview support. Keep disabled until the
     // additive attachment migration is installed and this private folder exists.
     // The folder must be outside public_html and writable only by the PHP app.

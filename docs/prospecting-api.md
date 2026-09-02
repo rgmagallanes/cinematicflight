@@ -1,14 +1,18 @@
-# Prospecting Phase 3 persistence
+# Prospecting persistence API
 
-Phase 3 adds private, owner-scoped MariaDB persistence. It does not add a Studio
+Phases 3 and 3.5 add private, owner-scoped MariaDB persistence. They do not add a Studio
 screen, external discovery, agent execution, LLM calls, enrichment, outreach, or
 promotion into `studio_inquiries`.
 
 ## Installation
 
 After backing up the Studio database and installing `database/mysql-schema.sql`,
-apply `database/mysql-prospecting-v1.sql`. The migration is additive and uses the
+apply `database/mysql-prospecting-v1.sql`, followed by
+`database/mysql-prospecting-execution-v1.sql`. Both migrations are additive and use the
 existing InnoDB, bigint ID, timestamp, and `utf8mb4_unicode_ci` conventions.
+
+The production backup, deployment, validation, and recovery procedure is in
+`docs/prospecting-production-migration.md`.
 
 The PHP API intentionally fails closed if these tables are absent. It has no
 browser-storage or demo-data fallback.
@@ -29,6 +33,10 @@ than path rewriting. Prospecting follows that convention:
 | `prospecting-approvals` | `GET`, `POST` | `prospect_id` |
 | `prospecting-cost-events` | `POST` | none |
 | `prospecting-costs` | `GET` | `mission_id` |
+| `prospecting-runs` | `GET` | `mission_id`, `prospect_id`, or `id` |
+| `prospecting-decisions` | `GET` | `run_id` |
+| `prospecting-artifacts` | `GET` | `prospect_id` and optional `version` |
+| `prospecting-reservations` | `GET` | `mission_id`, `prospect_id`, or `id` |
 
 All identifiers are public IDs. Every lookup also includes the authenticated
 Studio owner ID, so another owner's valid public ID receives the same `404` as a
@@ -50,5 +58,34 @@ JSON object no larger than 64 KB.
 - Cost idempotency keys are unique per owner. Exact repeats are safe; altered
   reuse returns `409`.
 - Cost summaries subtract committed actual costs from mission budget using
-  integer centavos. Reservations remain the future persistence adapter's work;
-  the Phase 2 in-memory reservation model is not presented as database-atomic.
+  integer centavos. The Studio cost-write route locks the owner row so its
+  committed spend cannot race an internal reservation authorization.
+
+## Internal agent mutation boundary
+
+`POST /api/index.php?action=prospecting-agent-ingest` is a server-to-server-only
+boundary. It is disabled by default and does not accept browser session or CSRF
+authentication. The bearer credential is a dedicated, per-owner 64-hex service
+token and must be transported only over HTTPS. A durable owner/request-ID ledger
+binds each request ID to the operation and canonical payload hash, returning the
+recorded response for an identical retry. Reusing a request ID with a different
+payload returns `409`.
+
+The narrow operation vocabulary is `CREATE_RUN`, `UPDATE_RUN`,
+`APPEND_DECISION`, `CREATE_ARTIFACT`, `RESERVE_BUDGET`, `COMMIT_RESERVATION`, and
+`RELEASE_RESERVATION`. Owner isolation is checked again for every referenced
+mission, prospect, run, decision, artifact, and reservation.
+
+The Studio owner API can read runs, decisions, artifacts, and reservation/cost
+information. It cannot perform the internal mutations. Artifacts are restricted
+to versioned `WALKTHROUGH_CONCEPT` and `OUTREACH_DRAFT` records and are always
+reported as `INTERNAL_UNSENT`.
+
+Reservation authorization locks the owner row and then the mission row in one
+transaction. The owner lock serializes monthly authorizations across missions;
+the mission lock protects its ceiling. The calculation includes committed cost
+events plus unexpired active reservations. Expired holds are recovered during
+internal reservation operations. Above-estimate commits repeat both checks;
+when capacity is insufficient, the reservation becomes
+`RECONCILIATION_REQUIRED`, no cost event is inserted, and the endpoint returns
+an explicit conflict.

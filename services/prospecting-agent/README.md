@@ -63,9 +63,10 @@ and monthly ceilings after spent and reserved amounts. Free actions return
 reservation to actual spend and releases unused capacity; `releaseReservation`
 removes a hold after an unbilled failure. An actual cost above its estimate may
 commit only if it still fits both ceilings. Otherwise `DENY_OVERAGE` leaves the
-original reservation in place and marks the result for reconciliation. A future
-persistence adapter must perform reserve/commit/release atomically; this phase
-provides no concurrency mechanism by itself.
+original reservation in place and marks the result for reconciliation. The
+Phase 3.5 PHP persistence boundary now performs reserve/commit/release under
+MariaDB owner and mission row locks. This TypeScript package remains an offline
+governance library and does not call that boundary or execute tools.
 
 ### Execution and loop limits
 

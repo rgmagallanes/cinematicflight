@@ -207,6 +207,12 @@ if ($action === 'review-ingest') {
     review_ingest_route($pdo, $config);
 }
 
+if ($action === 'prospecting-agent-ingest') {
+    require_once __DIR__ . '/prospecting.php';
+    require_once __DIR__ . '/prospecting-agent-ingest.php';
+    prospecting_agent_ingest_route($pdo, $config);
+}
+
 $ownerId = require_user();
 
 if (str_starts_with($action, 'prospecting-')) {
