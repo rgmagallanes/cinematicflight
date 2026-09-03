@@ -4,7 +4,11 @@ async function readJson(response) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) throw new Error("The Studio API is not available on this server.");
   const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || "The Studio API request failed.");
+  if (!response.ok) {
+    const error = new Error(payload.error || "The Studio API request failed.");
+    error.status = response.status;
+    throw error;
+  }
   if (payload.csrfToken) csrfToken = payload.csrfToken;
   return payload;
 }
@@ -48,8 +52,12 @@ export async function apiGet(action, params) {
   return request(action, {}, params);
 }
 
-export async function apiPost(action, body) {
-  return request(action, { method: "POST", body: JSON.stringify(body) });
+export async function apiPost(action, body, params) {
+  return request(action, { method: "POST", body: JSON.stringify(body) }, params);
+}
+
+export async function apiPatch(action, body, params) {
+  return request(action, { method: "PATCH", body: JSON.stringify(body) }, params);
 }
 
 export async function apiUpload(action, formData) {
