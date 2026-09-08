@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/website-research.schema.json",
+  "title": "Bounded Website Research",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "public_id", "owner_id", "mission_id", "prospect_id", "agent_run_id", "status", "requested_url", "canonical_host", "pages_attempted", "pages_succeeded", "stop_reason", "idempotency_key", "started_at", "completed_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "public_id": { "allOf": [{ "$ref": "./common.schema.json#/$defs/publicId" }, { "pattern": "^website-research_" }] },
+    "owner_id": { "$ref": "./common.schema.json#/$defs/ownerId" },
+    "mission_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "prospect_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "agent_run_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "status": { "enum": ["COMPLETED", "PARTIAL", "FAILED", "BLOCKED"] },
+    "requested_url": { "type": "string", "format": "uri", "maxLength": 2048 },
+    "canonical_host": { "type": ["string", "null"], "maxLength": 253 },
+    "pages_attempted": { "type": "integer", "minimum": 0, "maximum": 8 },
+    "pages_succeeded": { "type": "integer", "minimum": 0, "maximum": 8 },
+    "stop_reason": { "enum": ["RESEARCH_COMPLETE", "PAGE_LIMIT", "TIME_LIMIT", "POLICY_BLOCKED", "TOOL_FAILURE"] },
+    "idempotency_key": { "type": "string", "minLength": 8, "maxLength": 190 },
+    "started_at": { "$ref": "./common.schema.json#/$defs/timestamp" },
+    "completed_at": { "$ref": "./common.schema.json#/$defs/timestamp" }
+  }
+}

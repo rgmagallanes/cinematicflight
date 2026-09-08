@@ -559,6 +559,15 @@ function prospecting_read_reservations(PDO $pdo,int $ownerId):array
     $query=$pdo->prepare("select r.public_id,m.public_id mission_public_id,p.public_id prospect_public_id,ar.public_id run_public_id,r.provider,r.operation,r.estimated_cost_centavos,r.reserved_cost_centavos,r.actual_cost_centavos,case when r.status='RESERVED' and r.expires_at<=utc_timestamp() then 'EXPIRED' else r.status end status,r.idempotency_key,r.expires_at,r.created_at,r.updated_at,r.committed_at,r.released_at from prospecting_budget_reservations r join prospecting_missions m on m.id=r.mission_id and m.owner_id=r.owner_id left join prospecting_prospects p on p.id=r.prospect_id and p.owner_id=r.owner_id left join prospecting_agent_runs ar on ar.id=r.agent_run_id and ar.owner_id=r.owner_id where {$where} order by r.id desc");$query->execute($params);$rows=$query->fetchAll();foreach($rows as &$row){foreach(['estimated_cost_centavos','reserved_cost_centavos'] as $field)$row[$field]=(int)$row[$field];$row['actual_cost_centavos']=$row['actual_cost_centavos']===null?null:(int)$row['actual_cost_centavos'];}unset($row);return $rows;
 }
 
+function prospecting_read_website_research(PDO $pdo,int $ownerId):array
+{
+    $params=[$ownerId];$where='wr.owner_id=?';
+    if(isset($_GET['id'])){$where.=' and wr.public_id=?';$params[]=prospecting_query_public_id('id','website-research');}
+    if(isset($_GET['prospect_id'])){$prospect=prospecting_find($pdo,'prospecting_prospects',$ownerId,prospecting_query_public_id('prospect_id','prospect'));$where.=' and wr.prospect_id=?';$params[]=$prospect['id'];}
+    $query=$pdo->prepare("select wr.public_id,m.public_id mission_public_id,p.public_id prospect_public_id,ar.public_id run_public_id,wr.status,wr.requested_url,wr.canonical_host,wr.pages_attempted,wr.pages_succeeded,wr.stop_reason,wr.started_at,wr.completed_at,wr.created_at,wr.updated_at from prospecting_website_research wr join prospecting_missions m on m.id=wr.mission_id and m.owner_id=wr.owner_id join prospecting_prospects p on p.id=wr.prospect_id and p.owner_id=wr.owner_id join prospecting_agent_runs ar on ar.id=wr.agent_run_id and ar.owner_id=wr.owner_id where {$where} order by wr.id desc");$query->execute($params);$rows=$query->fetchAll();
+    foreach($rows as &$row){$row['mission_id']=$row['mission_public_id'];$row['prospect_id']=$row['prospect_public_id'];$row['agent_run_id']=$row['run_public_id'];unset($row['mission_public_id'],$row['prospect_public_id'],$row['run_public_id']);foreach(['pages_attempted','pages_succeeded'] as $field)$row[$field]=(int)$row[$field];}unset($row);return $rows;
+}
+
 function prospecting_route(PDO $pdo,int $ownerId,string $action):void
 {
     $method=$_SERVER['REQUEST_METHOD'];
@@ -601,6 +610,7 @@ function prospecting_route(PDO $pdo,int $ownerId,string $action):void
         if($action==='prospecting-decisions'&&$method==='GET')respond(['data'=>prospecting_read_decisions($pdo,$ownerId,prospecting_query_public_id('run_id','agent-run')),'csrfToken'=>csrf_token()]);
         if($action==='prospecting-artifacts'&&$method==='GET')respond(['data'=>prospecting_read_artifacts($pdo,$ownerId,prospecting_query_public_id('prospect_id','prospect')),'csrfToken'=>csrf_token()]);
         if($action==='prospecting-reservations'&&$method==='GET')respond(['data'=>prospecting_read_reservations($pdo,$ownerId),'csrfToken'=>csrf_token()]);
+        if($action==='prospecting-website-research'&&$method==='GET')respond(['data'=>prospecting_read_website_research($pdo,$ownerId),'csrfToken'=>csrf_token()]);
         respond(['error'=>'Method not allowed.'],405);
     } catch(ProspectingError $error){respond(['error'=>$error->getMessage()],$error->getCode());}
     catch(Throwable $error){error_log('Studio prospecting API failed: '.get_class($error));respond(['error'=>'Prospecting storage is temporarily unavailable. No fallback was used.'],503);}

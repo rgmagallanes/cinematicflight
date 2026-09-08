@@ -152,3 +152,20 @@ not an LLM-selected numerical penalty. The default qualification threshold is 75
 
 `DiscoveryProvider` defines the future adapter boundary. The first adapter will
 be a manual seed/import provider. No provider is implemented in Phase 1.
+
+## Phase 6 website research boundary
+
+`website-research.ts` is a bounded, offline-testable HTTPS research core. Its
+transport interface resolves and validates every address before an injected
+transport connects to the selected pinned public IP. It only emits observed
+website evidence and never treats page text as instructions.
+
+`scripts/prospecting-website-research.mjs` is the manual runner. It creates an
+auditable run and submits the completed result only through the signed internal
+ingest operation `PERSIST_WEBSITE_RESEARCH`. It is not a browser route, agent
+loop, discovery provider, LLM integration, or outreach mechanism.
+
+If the ingest service explicitly rejects that result, the runner records the
+new run as `FAILED` with `TOOL_FAILURE`. If the connection outcome is ambiguous,
+it does not overwrite the run because the persistence may have succeeded; retry
+the identical research idempotency key instead.

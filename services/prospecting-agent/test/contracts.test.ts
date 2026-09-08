@@ -10,7 +10,7 @@ test("all Phase 1 contracts are valid JSON Schema documents with unique IDs", as
     "agent-decision.schema.json", "agent-run.schema.json", "approval.schema.json", "artifact.schema.json",
     "common.schema.json", "contact.schema.json", "cost-event.schema.json", "evidence.schema.json",
     "mission-prospect.schema.json", "mission.schema.json", "promotion.schema.json", "prospect.schema.json",
-    "qualification.schema.json",
+    "qualification.schema.json", "website-research.schema.json",
   ]);
 
   const ids = new Set<string>();
@@ -42,9 +42,17 @@ test("contract-level money and outreach constraints remain deterministic", async
   assert.equal(decision.properties.action.enum.includes("SAVE_EVIDENCE"), true);
   assert.equal(decision.properties.action.enum.includes("SAVE_PROSPECT"), true);
   assert.equal(decision.properties.action.enum.includes("STOP_REPEATED_ACTION"), true);
+  assert.equal(decision.properties.action.enum.includes("STOP_TOOL_FAILURE"), true);
+  assert.equal(decision.properties.action.enum.includes("STOP_RESEARCH_COMPLETE"), true);
 
   const run = JSON.parse(await readFile(new URL("agent-run.schema.json", contractDirectory), "utf8"));
   assert.equal(run.properties.stop_reason.enum.includes("PAGE_LIMIT"), true);
   assert.equal(run.properties.stop_reason.enum.includes("LLM_LIMIT"), true);
   assert.equal(run.properties.stop_reason.enum.includes("REPEATED_ACTION"), true);
+  assert.equal(run.properties.stop_reason.enum.includes("RESEARCH_COMPLETE"), true);
+  assert.equal(run.properties.stop_reason.enum.includes("POLICY_BLOCKED"), true);
+
+  const research = JSON.parse(await readFile(new URL("website-research.schema.json", contractDirectory), "utf8"));
+  assert.equal(research.properties.status.enum.includes("COMPLETED"), true);
+  assert.equal(research.properties.stop_reason.enum.includes("RESEARCH_COMPLETE"), true);
 });

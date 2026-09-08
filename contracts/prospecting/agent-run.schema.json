@@ -13,7 +13,7 @@
     "status": { "enum": ["PENDING", "RUNNING", "COMPLETED", "STOPPED", "FAILED"] },
     "started_at": { "anyOf": [{ "$ref": "./common.schema.json#/$defs/timestamp" }, { "type": "null" }] },
     "completed_at": { "anyOf": [{ "$ref": "./common.schema.json#/$defs/timestamp" }, { "type": "null" }] },
-    "stop_reason": { "type": ["string", "null"], "enum": ["QUALIFIED", "DISQUALIFIED", "INSUFFICIENT_EVIDENCE", "BUDGET_LIMIT", "STEP_LIMIT", "PAGE_LIMIT", "LLM_LIMIT", "TIME_LIMIT", "TOOL_LIMIT", "REPEATED_ACTION", "DUPLICATE", "HUMAN_APPROVAL_REQUIRED", "TOOL_FAILURE", "FAILED", null] },
+    "stop_reason": { "type": ["string", "null"], "enum": ["QUALIFIED", "DISQUALIFIED", "INSUFFICIENT_EVIDENCE", "BUDGET_LIMIT", "STEP_LIMIT", "PAGE_LIMIT", "LLM_LIMIT", "TIME_LIMIT", "TOOL_LIMIT", "REPEATED_ACTION", "DUPLICATE", "HUMAN_APPROVAL_REQUIRED", "TOOL_FAILURE", "FAILED", "RESEARCH_COMPLETE", "POLICY_BLOCKED", null] },
     "step_count": { "type": "integer", "minimum": 0 },
     "llm_call_count": { "type": "integer", "minimum": 0 },
     "research_duration_ms": { "type": "integer", "minimum": 0 },

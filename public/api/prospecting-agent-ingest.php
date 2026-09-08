@@ -5,8 +5,8 @@ declare(strict_types=1);
 // read execution records. This file performs no tools, crawling, LLM, or outreach.
 
 const PROSPECTING_RUN_STATUSES = ['PENDING','RUNNING','COMPLETED','STOPPED','FAILED'];
-const PROSPECTING_RUN_STOP_REASONS = ['QUALIFIED','DISQUALIFIED','INSUFFICIENT_EVIDENCE','BUDGET_LIMIT','STEP_LIMIT','PAGE_LIMIT','LLM_LIMIT','TIME_LIMIT','TOOL_LIMIT','REPEATED_ACTION','DUPLICATE','HUMAN_APPROVAL_REQUIRED','TOOL_FAILURE','FAILED'];
-const PROSPECTING_AGENT_ACTIONS = ['DISCOVER_MORE','INSPECT_WEBSITE','INSPECT_PAGE','DETECT_EXISTING_EXPERIENCE','FIND_CONTACT','ANALYZE_EXPERIENCE_GAP','CALCULATE_SCORE','GENERATE_WALKTHROUGH','DRAFT_OUTREACH','SAVE_EVIDENCE','SAVE_PROSPECT','QUALIFY','DISQUALIFY','REQUEST_APPROVAL','STOP_INSUFFICIENT_EVIDENCE','STOP_BUDGET_LIMIT','STOP_TOOL_LIMIT','STOP_REPEATED_ACTION','STOP_DUPLICATE'];
+const PROSPECTING_RUN_STOP_REASONS = ['QUALIFIED','DISQUALIFIED','INSUFFICIENT_EVIDENCE','BUDGET_LIMIT','STEP_LIMIT','PAGE_LIMIT','LLM_LIMIT','TIME_LIMIT','TOOL_LIMIT','REPEATED_ACTION','DUPLICATE','HUMAN_APPROVAL_REQUIRED','TOOL_FAILURE','FAILED','RESEARCH_COMPLETE','POLICY_BLOCKED'];
+const PROSPECTING_AGENT_ACTIONS = ['DISCOVER_MORE','INSPECT_WEBSITE','INSPECT_PAGE','DETECT_EXISTING_EXPERIENCE','FIND_CONTACT','ANALYZE_EXPERIENCE_GAP','CALCULATE_SCORE','GENERATE_WALKTHROUGH','DRAFT_OUTREACH','SAVE_EVIDENCE','SAVE_PROSPECT','QUALIFY','DISQUALIFY','REQUEST_APPROVAL','STOP_INSUFFICIENT_EVIDENCE','STOP_BUDGET_LIMIT','STOP_TOOL_LIMIT','STOP_REPEATED_ACTION','STOP_DUPLICATE','STOP_POLICY_BLOCKED','STOP_PAGE_LIMIT','STOP_TIME_LIMIT','STOP_TOOL_FAILURE','STOP_RESEARCH_COMPLETE'];
 const PROSPECTING_AUTHORITY_RESULTS = ['ALLOWED','DENIED','HUMAN_APPROVAL_REQUIRED','NOT_EVALUATED'];
 const PROSPECTING_BUDGET_RESULTS = ['ALLOWED','ALLOW_FREE','DENIED','NOT_APPLICABLE','NOT_EVALUATED'];
 const PROSPECTING_ARTIFACT_TYPES = ['WALKTHROUGH_CONCEPT','OUTREACH_DRAFT'];
@@ -107,6 +107,59 @@ function prospecting_agent_create_artifact(PDO $pdo,int $ownerId,array $body):ar
     $versionQuery=$pdo->prepare('select coalesce(max(version),0)+1 from prospecting_artifacts where owner_id=? and prospect_id=? and type=?');$versionQuery->execute([$ownerId,$prospect['id'],$type]);$version=(int)$versionQuery->fetchColumn();
     $publicId=prospecting_public_id('artifact');$statement=$pdo->prepare('insert into prospecting_artifacts(public_id,owner_id,prospect_id,qualification_id,type,version,content) values(?,?,?,?,?,?,?)');$statement->execute([$publicId,$ownerId,$prospect['id'],$qualificationId,$type,$version,$encoded]);
     return ['public_id'=>$publicId,'prospect_public_id'=>$prospectPublic,'qualification_public_id'=>$qualificationPublic,'type'=>$type,'version'=>$version,'content'=>$body['content'],'delivery_status'=>'INTERNAL_UNSENT'];
+}
+
+function prospecting_agent_research_row(array $row):array
+{
+    return ['public_id'=>$row['public_id'],'mission_public_id'=>$row['mission_public_id'],'prospect_public_id'=>$row['prospect_public_id'],'run_public_id'=>$row['run_public_id'],'status'=>$row['status'],'requested_url'=>$row['requested_url'],'canonical_host'=>$row['canonical_host'],'pages_attempted'=>(int)$row['pages_attempted'],'pages_succeeded'=>(int)$row['pages_succeeded'],'stop_reason'=>$row['stop_reason'],'started_at'=>$row['started_at'],'completed_at'=>$row['completed_at'],'created_at'=>$row['created_at']];
+}
+
+function prospecting_agent_fetch_research(PDO $pdo,int $ownerId,string $publicId,bool $lock=false):array
+{
+    $query=$pdo->prepare('select wr.*,m.public_id mission_public_id,p.public_id prospect_public_id,ar.public_id run_public_id from prospecting_website_research wr join prospecting_missions m on m.id=wr.mission_id and m.owner_id=wr.owner_id join prospecting_prospects p on p.id=wr.prospect_id and p.owner_id=wr.owner_id join prospecting_agent_runs ar on ar.id=wr.agent_run_id and ar.owner_id=wr.owner_id where wr.owner_id=? and wr.public_id=?'.($lock?' for update':''));
+    $query->execute([$ownerId,$publicId]);$row=$query->fetch();if(!$row)throw new ProspectingError('The website research record could not be found.',404);return $row;
+}
+
+function prospecting_agent_research_time(array $body,string $field):DateTimeImmutable
+{
+    $value=prospecting_text($body,$field,40);try{return new DateTimeImmutable($value);}catch(Throwable){throw new ProspectingError("{$field} must be an ISO 8601 timestamp.",422);}
+}
+
+function prospecting_agent_research_https(string $value,string $field):string
+{
+    $url=prospecting_url($value,$field,true);$parts=parse_url($url);
+    if(($parts['scheme']??null)!=='https'||isset($parts['user'])||isset($parts['pass'])||isset($parts['fragment'])||isset($parts['port'])&&(int)$parts['port']!==443)throw new ProspectingError("{$field} must be a safe HTTPS URL.",422);
+    return $url;
+}
+
+function prospecting_agent_persist_website_research(PDO $pdo,int $ownerId,array $body):array
+{
+    prospecting_reject_unknown($body,['mission_public_id','prospect_public_id','run_public_id','idempotency_key','requested_url','canonical_host','status','stop_reason','pages_attempted','pages_succeeded','started_at','completed_at','evidence','events']);
+    $key=prospecting_text($body,'idempotency_key',190);if(!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{7,189}$/D',$key))throw new ProspectingError('Invalid research idempotency_key.',422);
+    $requestHash=hash('sha256',prospecting_json(prospecting_canonicalize($body)));
+    $existing=$pdo->prepare('select public_id,request_hash from prospecting_website_research where owner_id=? and idempotency_key=? for update');$existing->execute([$ownerId,$key]);$old=$existing->fetch();
+    if($old){if(!hash_equals($old['request_hash'],$requestHash))throw new ProspectingError('The research idempotency key is bound to a different payload.',409);return ['research'=>prospecting_agent_research_row(prospecting_agent_fetch_research($pdo,$ownerId,$old['public_id'],true)),'idempotent_replay'=>true];}
+    $mission=prospecting_find($pdo,'prospecting_missions',$ownerId,prospecting_text($body,'mission_public_id',80),true);if($mission['status']!=='RUNNING')throw new ProspectingError('Website research requires a RUNNING mission.',409);
+    $prospect=prospecting_find($pdo,'prospecting_prospects',$ownerId,prospecting_text($body,'prospect_public_id',80),true);if($prospect['status']!=='RESEARCHING')throw new ProspectingError('Website research requires a RESEARCHING prospect.',409);
+    $membership=$pdo->prepare('select 1 from prospecting_mission_prospects where mission_id=? and prospect_id=?');$membership->execute([$mission['id'],$prospect['id']]);if(!$membership->fetchColumn())throw new ProspectingError('The prospect is not a member of this mission.',422);
+    $run=prospecting_agent_fetch_run($pdo,$ownerId,prospecting_text($body,'run_public_id',80),true);if($run['status']!=='RUNNING'||(int)$run['mission_id']!==(int)$mission['id']||(int)$run['prospect_id']!==(int)$prospect['id'])throw new ProspectingError('The research run must be RUNNING and belong to this mission and prospect.',422);
+    $status=prospecting_enum($body,'status',['COMPLETED','PARTIAL','FAILED','BLOCKED']);$stop=prospecting_enum($body,'stop_reason',['RESEARCH_COMPLETE','PAGE_LIMIT','TIME_LIMIT','POLICY_BLOCKED','TOOL_FAILURE']);
+    $allowedStops=['COMPLETED'=>['RESEARCH_COMPLETE'],'PARTIAL'=>['PAGE_LIMIT','TIME_LIMIT'],'BLOCKED'=>['POLICY_BLOCKED'],'FAILED'=>['TOOL_FAILURE']];if(!in_array($stop,$allowedStops[$status],true))throw new ProspectingError('Research status and stop_reason do not agree.',422);
+    $requested=prospecting_agent_research_https(prospecting_text($body,'requested_url',2048),'requested_url');if(prospecting_normalized_domain($requested)!==$prospect['normalized_domain'])throw new ProspectingError('Website research must use the prospect’s stored official website domain.',422);$host=prospecting_text($body,'canonical_host',253,false);if($host!==null&&(!preg_match('/^[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?$/D',$host)||str_contains($host,'..')||prospecting_normalized_domain('https://'.$host)!==$prospect['normalized_domain']))throw new ProspectingError('Invalid canonical_host.',422);
+    $attempted=prospecting_integer($body,'pages_attempted',0,8);$succeeded=prospecting_integer($body,'pages_succeeded',0,8);if($succeeded>$attempted)throw new ProspectingError('pages_succeeded cannot exceed pages_attempted.',422);
+    $started=prospecting_agent_research_time($body,'started_at');$completed=prospecting_agent_research_time($body,'completed_at');if($completed<$started)throw new ProspectingError('completed_at cannot precede started_at.',422);
+    $evidence=$body['evidence']??null;if(!is_array($evidence)||!array_is_list($evidence)||count($evidence)>32)throw new ProspectingError('evidence must contain at most 32 observations.',422);
+    $events=$body['events']??null;if(!is_array($events)||!array_is_list($events)||count($events)>48)throw new ProspectingError('events must contain at most 48 entries.',422);
+    $publicId=prospecting_public_id('website-research');$insert=$pdo->prepare('insert into prospecting_website_research(public_id,owner_id,mission_id,prospect_id,agent_run_id,status,requested_url,canonical_host,pages_attempted,pages_succeeded,stop_reason,idempotency_key,request_hash,started_at,completed_at) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    $insert->execute([$publicId,$ownerId,$mission['id'],$prospect['id'],$run['id'],$status,$requested,$host,$attempted,$succeeded,$stop,$key,$requestHash,$started->format('Y-m-d H:i:s'),$completed->format('Y-m-d H:i:s')]);$research=prospecting_agent_fetch_research($pdo,$ownerId,$publicId,true);
+    $evidenceInsert=$pdo->prepare('insert into prospecting_evidence(public_id,owner_id,prospect_id,agent_run_id,website_research_id,source_type,source_url,page_title,observation_type,claim,observation,content_hash,captured_at) values(?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    foreach($evidence as $item){if(!is_array($item)||array_is_list($item))throw new ProspectingError('Each evidence item must be an object.',422);prospecting_reject_unknown($item,['source_type','source_url','page_title','observation_type','claim','observation','content_hash','captured_at']);$sourceType=prospecting_enum($item,'source_type',['WEBSITE']);$source=prospecting_agent_research_https(prospecting_text($item,'source_url',2048),'source_url');$sourceHost=strtolower((string)parse_url($source,PHP_URL_HOST));if($host===null||$sourceHost!==$host)throw new ProspectingError('Evidence source_url must use the established canonical host.',422);$title=prospecting_text($item,'page_title',500,false);$type=prospecting_text($item,'observation_type',120);$claim=prospecting_text($item,'claim',1000);$observation=prospecting_text($item,'observation',1000);$hash=prospecting_text($item,'content_hash',64);if(!preg_match('/^[a-f0-9]{64}$/D',$hash))throw new ProspectingError('Invalid evidence content_hash.',422);$captured=prospecting_agent_research_time($item,'captured_at');$evidenceInsert->execute([prospecting_public_id('evidence'),$ownerId,$prospect['id'],$run['id'],$research['id'],$sourceType,$source,$title,$type,$claim,$observation,$hash,$captured->format('Y-m-d H:i:s')]);}
+    $next=(int)$pdo->query('select coalesce(max(step_number),0)+1 from prospecting_agent_decisions where agent_run_id='.(int)$run['id'])->fetchColumn();$decisionInsert=$pdo->prepare('insert into prospecting_agent_decisions(public_id,owner_id,agent_run_id,step_number,action,reason,target,expected_information,authority_result,budget_result,estimated_cost_centavos,actual_cost_centavos,confidence,state_before_json,state_after_json,governance_trace_json) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    $terminalAction=['RESEARCH_COMPLETE'=>'STOP_RESEARCH_COMPLETE','PAGE_LIMIT'=>'STOP_PAGE_LIMIT','TIME_LIMIT'=>'STOP_TIME_LIMIT','POLICY_BLOCKED'=>'STOP_POLICY_BLOCKED','TOOL_FAILURE'=>'STOP_TOOL_FAILURE'][$stop];$hasTerminal=false;
+    foreach($events as $event){if(!is_array($event)||array_is_list($event))throw new ProspectingError('Each research event must be an object.',422);prospecting_reject_unknown($event,['action','target','reason']);$action=prospecting_enum($event,'action',PROSPECTING_AGENT_ACTIONS);if(!in_array($action,['INSPECT_WEBSITE','INSPECT_PAGE','SAVE_EVIDENCE','STOP_POLICY_BLOCKED','STOP_PAGE_LIMIT','STOP_TIME_LIMIT','STOP_TOOL_FAILURE','STOP_RESEARCH_COMPLETE'],true))throw new ProspectingError('Invalid research event action.',422);if($action===$terminalAction)$hasTerminal=true;$target=prospecting_text($event,'target',2048,false);$reason=prospecting_text($event,'reason',5000);$before=['prospect_status'=>$prospect['status'],'research_status'=>'RUNNING'];$after=['prospect_status'=>$prospect['status'],'research_status'=>$status];$trace=['phase'=>'WEBSITE_RESEARCH','untrusted_website_content'=>true,'action'=>$action];$decisionInsert->execute([prospecting_public_id('decision'),$ownerId,$run['id'],$next++,$action,$reason,$target,'Bounded first-party website evidence.',str_starts_with($action,'STOP_')?'NOT_EVALUATED':'ALLOWED','ALLOW_FREE',0,0,1.0,prospecting_json($before),prospecting_json($after),prospecting_json($trace)]);}
+    if(!$hasTerminal)throw new ProspectingError('Research events must include the matching terminal action.',422);
+    $terminal=$status==='FAILED'?'FAILED':($status==='BLOCKED'?'STOPPED':'COMPLETED');$duration=max(0,($completed->getTimestamp()*1000+(int)$completed->format('v'))-($started->getTimestamp()*1000+(int)$started->format('v')));$update=$pdo->prepare('update prospecting_agent_runs set status=?,completed_at=utc_timestamp(),stop_reason=?,step_count=?,research_duration_ms=? where owner_id=? and id=?');$update->execute([$terminal,$stop,max((int)$run['step_count'],$next-1),max((int)$run['research_duration_ms'],$duration),$ownerId,$run['id']]);
+    return ['research'=>prospecting_agent_research_row($research),'idempotent_replay'=>false];
 }
 
 function prospecting_agent_expire_reservations(PDO $pdo,int $ownerId):void
@@ -215,6 +268,7 @@ function prospecting_agent_dispatch(PDO $pdo,int $ownerId,array $config,string $
         'UPDATE_RUN'=>[['run'=>prospecting_agent_update_run($pdo,$ownerId,$payload)],200],
         'APPEND_DECISION'=>[['decision'=>prospecting_agent_append_decision($pdo,$ownerId,$payload)],201],
         'CREATE_ARTIFACT'=>[['artifact'=>prospecting_agent_create_artifact($pdo,$ownerId,$payload)],201],
+        'PERSIST_WEBSITE_RESEARCH'=>[prospecting_agent_persist_website_research($pdo,$ownerId,$payload),201],
         'RESERVE_BUDGET'=>array_values((function()use($pdo,$ownerId,$config,$payload){$result=prospecting_agent_reserve($pdo,$ownerId,$config,$payload);return [$result,$result['allowed']?201:409];})()),
         'COMMIT_RESERVATION'=>array_values((function()use($pdo,$ownerId,$config,$payload){$result=prospecting_agent_commit_reservation($pdo,$ownerId,$config,$payload);return [$result,$result['allowed']?200:409];})()),
         'RELEASE_RESERVATION'=>[['release'=>prospecting_agent_release_reservation($pdo,$ownerId,$payload)],200],

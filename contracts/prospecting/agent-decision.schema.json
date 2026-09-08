@@ -9,7 +9,7 @@
     "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
     "agent_run_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
     "step_number": { "type": "integer", "minimum": 1 },
-    "action": { "enum": ["DISCOVER_MORE", "INSPECT_WEBSITE", "INSPECT_PAGE", "DETECT_EXISTING_EXPERIENCE", "FIND_CONTACT", "ANALYZE_EXPERIENCE_GAP", "CALCULATE_SCORE", "GENERATE_WALKTHROUGH", "DRAFT_OUTREACH", "SAVE_EVIDENCE", "SAVE_PROSPECT", "QUALIFY", "DISQUALIFY", "REQUEST_APPROVAL", "STOP_INSUFFICIENT_EVIDENCE", "STOP_BUDGET_LIMIT", "STOP_TOOL_LIMIT", "STOP_REPEATED_ACTION", "STOP_DUPLICATE"] },
+    "action": { "enum": ["DISCOVER_MORE", "INSPECT_WEBSITE", "INSPECT_PAGE", "DETECT_EXISTING_EXPERIENCE", "FIND_CONTACT", "ANALYZE_EXPERIENCE_GAP", "CALCULATE_SCORE", "GENERATE_WALKTHROUGH", "DRAFT_OUTREACH", "SAVE_EVIDENCE", "SAVE_PROSPECT", "QUALIFY", "DISQUALIFY", "REQUEST_APPROVAL", "STOP_INSUFFICIENT_EVIDENCE", "STOP_BUDGET_LIMIT", "STOP_TOOL_LIMIT", "STOP_REPEATED_ACTION", "STOP_DUPLICATE", "STOP_POLICY_BLOCKED", "STOP_PAGE_LIMIT", "STOP_TIME_LIMIT", "STOP_TOOL_FAILURE", "STOP_RESEARCH_COMPLETE"] },
     "reason": { "type": "string", "minLength": 1, "maxLength": 5000 },
     "target": { "type": ["string", "null"], "maxLength": 2048 },
     "expected_information": { "type": ["string", "null"], "maxLength": 5000 },

@@ -70,6 +70,24 @@ export interface Evidence {
   captured_at: IsoDateTime;
 }
 
+export interface WebsiteResearch {
+  id: DatabaseId;
+  public_id: PublicId;
+  owner_id: DatabaseId;
+  mission_id: DatabaseId;
+  prospect_id: DatabaseId;
+  agent_run_id: DatabaseId;
+  status: "COMPLETED" | "PARTIAL" | "FAILED" | "BLOCKED";
+  requested_url: string;
+  canonical_host: string | null;
+  pages_attempted: number;
+  pages_succeeded: number;
+  stop_reason: "RESEARCH_COMPLETE" | "PAGE_LIMIT" | "TIME_LIMIT" | "POLICY_BLOCKED" | "TOOL_FAILURE";
+  idempotency_key: string;
+  started_at: IsoDateTime;
+  completed_at: IsoDateTime;
+}
+
 export interface Qualification {
   id: DatabaseId;
   public_id: PublicId;

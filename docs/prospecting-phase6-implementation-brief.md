@@ -132,7 +132,7 @@ Repeated requests with the same owner, idempotency key, and identical request ha
 ## 8. Governance and accounting
 
 - Every fetch attempt and terminal outcome is represented by an append-only agent decision. Existing actions `INSPECT_WEBSITE`, `INSPECT_PAGE`, and `SAVE_EVIDENCE` cover successful work.
-- Add `RESEARCH_COMPLETE` and `POLICY_BLOCKED` to the agent-run stop reasons, and add `STOP_POLICY_BLOCKED` to the decision action vocabulary. A successful dedicated research run completes with `RESEARCH_COMPLETE`; robots or network-policy denial stops with `POLICY_BLOCKED` and `STOP_POLICY_BLOCKED`.
+- Add `RESEARCH_COMPLETE` and `POLICY_BLOCKED` to the agent-run stop reasons. Add `STOP_RESEARCH_COMPLETE`, `STOP_POLICY_BLOCKED`, `STOP_PAGE_LIMIT`, `STOP_TIME_LIMIT`, and `STOP_TOOL_FAILURE` to the decision action vocabulary so every terminal result has an accurate append-only audit entry. A successful dedicated research run completes with `RESEARCH_COMPLETE`; robots or network-policy denial stops with `POLICY_BLOCKED` and `STOP_POLICY_BLOCKED`.
 - Existing run step, duration, and tool counters are updated through the internal persistence boundary.
 - Ordinary direct HTTP fetching has no provider charge and creates no cost reservation.
 - If a future paid provider is introduced, it must use the existing reserve/commit/release budget workflow before execution.
@@ -229,6 +229,7 @@ No migration or application deployment is part of Phase 6 implementation work. P
 Phase 6 is complete only when:
 
 - one synthetic local fixture can be researched through the manually invoked runner;
+- an explicit ingest rejection terminates its newly created run as `FAILED` / `TOOL_FAILURE`; an ambiguous connection failure is retried idempotently rather than overwriting a potentially completed run;
 - all fetching is bounded by the approved policy;
 - observations are saved as immutable, owner-scoped evidence through the signed internal boundary;
 - the stored research summary and evidence can be read through the existing Studio owner boundary;
@@ -245,7 +246,7 @@ Approval is requested for these defaults:
 4. Use limits of 8 pages, 1 MiB decoded body per page, 3 redirects per request, 15 seconds per request, and 60 seconds per run.
 5. Keep Phase 6 execution out of the Studio UI; expose stored results read-only.
 6. Require a linked agent run and a `RUNNING` mission for every research operation.
-7. Add `RESEARCH_COMPLETE`, `POLICY_BLOCKED`, and `STOP_POLICY_BLOCKED` to the relevant domain vocabularies.
+7. Add `RESEARCH_COMPLETE`, `POLICY_BLOCKED`, and terminal research decision actions to the relevant domain vocabularies.
 8. Limit each result to 32 observations, 1,000 characters per observation, and the existing 64 KB internal request boundary.
 
 Implementation must not begin until these decisions and this brief are approved.

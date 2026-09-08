@@ -37,6 +37,7 @@ than path rewriting. Prospecting follows that convention:
 | `prospecting-decisions` | `GET` | `run_id` |
 | `prospecting-artifacts` | `GET` | `prospect_id` and optional `version` |
 | `prospecting-reservations` | `GET` | `mission_id`, `prospect_id`, or `id` |
+| `prospecting-website-research` | `GET` | `prospect_id` or `id` |
 
 All identifiers are public IDs. Every lookup also includes the authenticated
 Studio owner ID, so another owner's valid public ID receives the same `404` as a
@@ -72,9 +73,13 @@ recorded response for an identical retry. Reusing a request ID with a different
 payload returns `409`.
 
 The narrow operation vocabulary is `CREATE_RUN`, `UPDATE_RUN`,
-`APPEND_DECISION`, `CREATE_ARTIFACT`, `RESERVE_BUDGET`, `COMMIT_RESERVATION`, and
-`RELEASE_RESERVATION`. Owner isolation is checked again for every referenced
-mission, prospect, run, decision, artifact, and reservation.
+`APPEND_DECISION`, `CREATE_ARTIFACT`, `RESERVE_BUDGET`, `COMMIT_RESERVATION`,
+`RELEASE_RESERVATION`, and `PERSIST_WEBSITE_RESEARCH`. Website research result
+persistence requires a running mission, a researching prospect that belongs to
+that mission, and a running agent run linked to both. It persists only bounded,
+already-collected observations; it never accepts a browser crawler request.
+Owner isolation is checked again for every referenced mission, prospect, run,
+decision, artifact, reservation, and research record.
 
 The Studio owner API can read runs, decisions, artifacts, and reservation/cost
 information. It cannot perform the internal mutations. Artifacts are restricted
