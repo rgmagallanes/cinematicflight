@@ -1,6 +1,6 @@
 # Prospecting Phase 6 — Website Research and Evidence Capture
 
-Status: Proposed implementation brief. Approval is required before implementation.
+Status: Proposed implementation brief, amended after architecture review. Approval is required before implementation.
 
 ## 1. Goal
 
@@ -15,8 +15,8 @@ Website fetching must not be exposed as a general browser-authenticated mutation
 The recommended initial implementation is:
 
 1. A deterministic, offline-testable research core under `services/prospecting-agent/`.
-2. A small manually invoked CLI runner that performs bounded fetching without introducing a web server or framework.
-3. A narrow signed internal ingest operation that persists a validated research result, evidence, run counters, and decisions.
+2. A small manually invoked CLI runner that creates and completes an auditable agent run while performing bounded fetching, without introducing a web server or framework.
+3. A narrow signed internal ingest operation that persists a validated research result, evidence, run counters, and decisions within the existing 64 KB request limit.
 4. Read-only Studio owner API support for research summaries and evidence.
 
 Network work must not run while a MariaDB transaction or database row lock is held. The fetch completes first; the validated result is then persisted atomically.
@@ -27,6 +27,8 @@ No Phase 6 Studio execution control is proposed. A later phase may add a request
 
 - The prospect must belong to the authenticated owner represented by the internal token.
 - The prospect must have a normalized official HTTPS website.
+- The mission must belong to the same owner, contain the prospect, and be in `RUNNING` status.
+- Every research operation must have an agent run linked to that mission and prospect. The run is not optional.
 - The prospect must be in `RESEARCHING` status.
 - The research operation may create evidence, update its own research record, update run counters, and append governance decisions.
 - It must not qualify, approve, reject, promote, or contact a prospect.
@@ -40,7 +42,7 @@ The first implementation should use the following fail-closed limits:
 - HTTPS only.
 - No URL credentials or fragments.
 - Standard HTTPS port only.
-- Exact normalized hostname only, including redirects and discovered pages.
+- Exact normalized hostname after canonical-host establishment. One initial `www` to non-`www`, or non-`www` to `www`, redirect may establish the canonical hostname after full URL and DNS/IP validation. All later redirects and discovered pages must use that exact hostname.
 - Maximum 3 redirects per request.
 - Maximum 8 fetched pages per research run.
 - Maximum 1 MiB decoded response body per page.
@@ -50,14 +52,14 @@ The first implementation should use the following fail-closed limits:
 - Accepted content types: `text/html` and `application/xhtml+xml`.
 - No cookies, authentication forwarding, browser-session forwarding, secret-bearing headers, form submission, downloads, JavaScript execution, or embedded-resource fetching.
 - Reject binary documents, archives, PDFs, scripts, media, and unknown content types.
-- Respect `robots.txt`; a denial is recorded as a bounded stop result, not bypassed.
+- Respect `robots.txt`. A `404` means no published policy; an explicit applicable disallow is `POLICY_BLOCKED`; and a timeout, fetch failure, or malformed policy fails closed as `POLICY_BLOCKED`.
 
 Before every connection, including redirects and selected internal pages, the implementation must:
 
 1. Canonicalize the hostname, including IDNA handling.
 2. Resolve all A and AAAA records.
 3. Reject the target if any answer is loopback, private, link-local, multicast, reserved, unspecified, documentation-only, metadata-service, or otherwise non-public.
-4. Pin the validated public address used by the connection so DNS cannot be changed between validation and connection.
+4. Pin the validated public address at connection time so DNS cannot be changed between validation and connection. Preserve the original validated hostname for the HTTP `Host` header and TLS SNI/certificate verification.
 5. Revalidate each redirect and next-page target independently.
 
 Tests must cover IPv4-mapped IPv6 and alternate numeric IPv4 representations. A target with mixed public and prohibited DNS answers must be rejected.
@@ -100,6 +102,8 @@ Claims must describe what the fetched page contained, for example: “The fetche
 
 Only the minimum useful metadata or short source snippet should be retained. Complete copyrighted page HTML must not be stored as evidence.
 
+One research result may contain no more than 32 evidence observations. Each observation is limited to 1,000 characters, and the complete internal ingest request must remain within the existing 64 KB request limit. Oversized results are rejected rather than truncated ambiguously.
+
 LLM output is not evidence, and no LLM is used in this phase.
 
 ## 7. Persistence model
@@ -109,7 +113,7 @@ Add an additive `prospecting_website_research` table in a Phase 6 migration. It 
 - internal and public IDs
 - owner ID
 - prospect ID
-- agent run ID, where applicable
+- required agent run ID
 - status
 - requested URL and normalized hostname
 - page attempt and success counts
@@ -121,13 +125,14 @@ Suggested statuses are `PENDING`, `RUNNING`, `COMPLETED`, `PARTIAL`, `FAILED`, a
 
 The migration must create the research table before adding the nullable `website_research_id` relationship and foreign key to `prospecting_evidence`. It must not create a second evidence table.
 
-Research result persistence should use one short transaction after network activity has ended. The transaction validates ownership and lifecycle state, updates the research record, inserts immutable evidence, updates run counters, and appends decisions. Any failure rolls back the result set.
+Research result persistence should use one short transaction after network activity has ended. The transaction validates ownership and lifecycle state, verifies that the mission contains the prospect and that the run belongs to the same mission and prospect, updates the research record, inserts immutable evidence, updates run counters, and appends decisions. Any failure rolls back the result set.
 
 Repeated requests with the same owner, idempotency key, and identical request hash return the existing research record. Reuse of the key with a materially different request returns a conflict.
 
 ## 8. Governance and accounting
 
-- Every fetch attempt and terminal outcome is represented by an append-only agent decision using the existing action and stop-reason vocabulary, extended only if the current contracts cannot accurately represent website research.
+- Every fetch attempt and terminal outcome is represented by an append-only agent decision. Existing actions `INSPECT_WEBSITE`, `INSPECT_PAGE`, and `SAVE_EVIDENCE` cover successful work.
+- Add `RESEARCH_COMPLETE` and `POLICY_BLOCKED` to the agent-run stop reasons, and add `STOP_POLICY_BLOCKED` to the decision action vocabulary. A successful dedicated research run completes with `RESEARCH_COMPLETE`; robots or network-policy denial stops with `POLICY_BLOCKED` and `STOP_POLICY_BLOCKED`.
 - Existing run step, duration, and tool counters are updated through the internal persistence boundary.
 - Ordinary direct HTTP fetching has no provider charge and creates no cost reservation.
 - If a future paid provider is introduced, it must use the existing reserve/commit/release budget workflow before execution.
@@ -189,6 +194,7 @@ All website fetch tests should use an injected fake HTTP/DNS transport. The defa
 - bounded snippets rather than full HTML
 - page instructions are treated as text and never executed
 - incomplete research does not create site-wide absence claims
+- maximum 32 evidence observations, maximum 1,000 characters per observation, and maximum 64 KB ingest request
 
 ### Persistence and security
 
@@ -199,6 +205,7 @@ All website fetch tests should use an injected fake HTTP/DNS transport. The defa
 - conflicting replay
 - owner isolation
 - cross-owner prospect and run references rejected
+- run/prospect/mission membership mismatches rejected
 - invalid lifecycle state rejected
 - internal authentication disabled/fail-closed behavior
 - durable request replay protection
@@ -232,10 +239,13 @@ Phase 6 is complete only when:
 
 Approval is requested for these defaults:
 
-1. Restrict every request and redirect to the exact normalized hostname, rather than the wider registrable domain.
-2. Respect `robots.txt` and stop safely when it denies access.
+1. Allow one fully validated initial `www`/non-`www` canonical redirect, then restrict every request and redirect to the established exact hostname.
+2. Respect `robots.txt`: allow a `404`, and fail closed for an applicable disallow, timeout, fetch failure, or malformed policy.
 3. Use a manually invoked CLI runner plus signed result ingest, rather than synchronous crawling in PHP.
 4. Use limits of 8 pages, 1 MiB decoded body per page, 3 redirects per request, 15 seconds per request, and 60 seconds per run.
 5. Keep Phase 6 execution out of the Studio UI; expose stored results read-only.
+6. Require a linked agent run and a `RUNNING` mission for every research operation.
+7. Add `RESEARCH_COMPLETE`, `POLICY_BLOCKED`, and `STOP_POLICY_BLOCKED` to the relevant domain vocabularies.
+8. Limit each result to 32 observations, 1,000 characters per observation, and the existing 64 KB internal request boundary.
 
 Implementation must not begin until these decisions and this brief are approved.
