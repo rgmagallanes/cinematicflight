@@ -1,10 +1,10 @@
-import { test, expect } from 'vitest';
+import test from 'node:test';
+import assert from 'node:assert/strict';
 import {
   calculateScore,
-  classifyPriority,
   DEFAULT_QUALIFICATION_THRESHOLD,
   meetsQualificationThreshold,
-} from './services/prospecting-agent/src/scoring.js';
+} from '../services/prospecting-agent/src/scoring.ts';
 
 // Helper: qualify a prospect using the REAL deterministic scoring
 export function qualifyProspect(components, penalties = {}) {
@@ -40,11 +40,11 @@ test('Phase 5B - Scenario A: Excellent Fit', async () => {
   // finalScore = 92 (no penalties)
   // priority = HOT (92 >= 90)
   // qualified = true (92 >= 75)
-  expect(qualification.weightedScore).toBe(92);
-  expect(qualification.penaltyScore).toBe(0);
-  expect(qualification.finalScore).toBe(92);
-  expect(qualification.priority).toBe('HOT');
-  expect(qualification.qualified).toBe(true);
+  assert.equal(qualification.weightedScore, 92);
+  assert.equal(qualification.penaltyScore, 0);
+  assert.equal(qualification.finalScore, 92);
+  assert.equal(qualification.priority, 'HOT');
+  assert.equal(qualification.qualified, true);
 });
 
 test('Phase 5B - Scenario B: Good Fit', async () => {
@@ -64,11 +64,11 @@ test('Phase 5B - Scenario B: Good Fit', async () => {
   // finalScore = 82 (no penalties)
   // priority = HIGH (82 >= 75 and < 90)
   // qualified = true (82 >= 75)
-  expect(qualification.weightedScore).toBe(82);
-  expect(qualification.penaltyScore).toBe(0);
-  expect(qualification.finalScore).toBe(82);
-  expect(qualification.priority).toBe('HIGH');
-  expect(qualification.qualified).toBe(true);
+  assert.equal(qualification.weightedScore, 82);
+  assert.equal(qualification.penaltyScore, 0);
+  assert.equal(qualification.finalScore, 82);
+  assert.equal(qualification.priority, 'HIGH');
+  assert.equal(qualification.qualified, true);
 });
 
 test('Phase 5B - Scenario C: Existing Interactive Experience', async () => {
@@ -92,19 +92,19 @@ test('Phase 5B - Scenario C: Existing Interactive Experience', async () => {
   // qualified = false (65 < 75)
 
   // Verify component scores are preserved
-  expect(qualification.experienceGapComponent).toBe(85);
-  expect(qualification.walkthroughFitComponent).toBe(85);
-  expect(qualification.commercialFitComponent).toBe(80);
-  expect(qualification.visualPropertyFitComponent).toBe(90);
-  expect(qualification.contactabilityComponent).toBe(90);
+  assert.equal(qualification.experienceGapComponent, 85);
+  assert.equal(qualification.walkthroughFitComponent, 85);
+  assert.equal(qualification.commercialFitComponent, 80);
+  assert.equal(qualification.visualPropertyFitComponent, 90);
+  assert.equal(qualification.contactabilityComponent, 90);
 
   // CRITICAL: Verify the deterministic penalty effect
   // The weighted score is strong (85 >= 75), but the -20 penalty pushes finalScore below threshold
-  expect(qualification.weightedScore).toBe(85);
-  expect(qualification.penaltyScore).toBe(-20);
-  expect(qualification.finalScore).toBe(65);
-  expect(qualification.priority).toBe('MEDIUM');
-  expect(qualification.qualified).toBe(false);
+  assert.equal(qualification.weightedScore, 85);
+  assert.equal(qualification.penaltyScore, -20);
+  assert.equal(qualification.finalScore, 65);
+  assert.equal(qualification.priority, 'MEDIUM');
+  assert.equal(qualification.qualified, false);
 
   // The point of this scenario: strong weighted score + deterministic penalty
   // final score below qualification threshold
@@ -128,11 +128,11 @@ test('Phase 5B - Scenario D: Poor Contactability', async () => {
   // finalScore = 84 (no penalties)
   // priority = HIGH (84 >= 75)
   // qualified = true (84 >= 75)
-  expect(qualification.weightedScore).toBe(84);
-  expect(qualification.penaltyScore).toBe(0);
-  expect(qualification.finalScore).toBe(84);
-  expect(qualification.priority).toBe('HIGH');
-  expect(qualification.qualified).toBe(true);
+  assert.equal(qualification.weightedScore, 84);
+  assert.equal(qualification.penaltyScore, 0);
+  assert.equal(qualification.finalScore, 84);
+  assert.equal(qualification.priority, 'HIGH');
+  assert.equal(qualification.qualified, true);
 });
 
 test('Phase 5B - Scenario E: Weak Fit', async () => {
@@ -152,9 +152,9 @@ test('Phase 5B - Scenario E: Weak Fit', async () => {
   // finalScore = 38 (no penalties)
   // priority = LOW (38 < 60)
   // qualified = false (38 < 75)
-  expect(qualification.weightedScore).toBe(38);
-  expect(qualification.penaltyScore).toBe(0);
-  expect(qualification.finalScore).toBe(38);
-  expect(qualification.priority).toBe('LOW');
-  expect(qualification.qualified).toBe(false);
+  assert.equal(qualification.weightedScore, 38);
+  assert.equal(qualification.penaltyScore, 0);
+  assert.equal(qualification.finalScore, 38);
+  assert.equal(qualification.priority, 'LOW');
+  assert.equal(qualification.qualified, false);
 });
