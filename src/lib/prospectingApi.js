@@ -32,6 +32,7 @@ export const prospectingApi = {
   listEvidence: async (prospectId) => data(await apiGet('prospecting-evidence', { prospect_id: prospectId })),
   listContacts: async (prospectId) => data(await apiGet('prospecting-contacts', { prospect_id: prospectId })),
   listQualifications: async (prospectId) => data(await apiGet('prospecting-qualifications', { prospect_id: prospectId })),
+  createQualification: async (prospectId, payload) => record(await apiPost('prospecting-qualifications', payload, { prospect_id: prospectId }), 'qualification'),
   listApprovals: async (prospectId) => data(await apiGet('prospecting-approvals', { prospect_id: prospectId })),
   createApproval: async (prospectId, payload) => record(await apiPost('prospecting-approvals', payload, { prospect_id: prospectId }), 'approval'),
   listArtifacts: async (prospectId) => data(await apiGet('prospecting-artifacts', { prospect_id: prospectId })),

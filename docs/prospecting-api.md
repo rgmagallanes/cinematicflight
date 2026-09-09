@@ -8,7 +8,8 @@ promotion into `studio_inquiries`.
 
 After backing up the Studio database and installing `database/mysql-schema.sql`,
 apply `database/mysql-prospecting-v1.sql`, followed by
-`database/mysql-prospecting-execution-v1.sql`. Both migrations are additive and use the
+`database/mysql-prospecting-execution-v1.sql`, the Phase 6 and 7 additive migrations,
+and `database/mysql-prospecting-qualification-provenance-v1.sql`. These migrations are additive and use the
 existing InnoDB, bigint ID, timestamp, and `utf8mb4_unicode_ci` conventions.
 
 The production backup, deployment, validation, and recovery procedure is in
@@ -52,8 +53,10 @@ JSON object no larger than 64 KB.
   can only come from the qualification endpoint; approval states require an
   append-only approval record; promotion is unavailable.
 - Qualification writes lock the prospect, allocate the next snapshot version,
-  calculate the v1 weighted score and penalties, and transition the prospect in
-  one transaction. Submitted final score, priority, and result fields are ignored.
+  calculate the v1 weighted score and penalties, insert immutable provenance,
+  and transition the prospect in one transaction. Each write requires one or
+  more same-prospect evidence references or labelled manual assessments with a
+  reason. Submitted final score, priority, and result fields are ignored.
 - Approval payloads are canonicalized and SHA-256 hashed server-side. Approval
   and its applicable prospect transition commit together. Approval never sends
   or promotes anything.
