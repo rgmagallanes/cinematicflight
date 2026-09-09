@@ -10,7 +10,7 @@ for ($attempt = 0; $attempt < 30; $attempt++) {
     }
 }
 if (!isset($pdo)) throw new RuntimeException('Local fixture database did not become ready.');
-foreach (['mysql-schema.sql', 'mysql-prospecting-v1.sql', 'mysql-prospecting-execution-v1.sql', 'mysql-prospecting-website-research-v1.sql', 'mysql-prospecting-website-research-requests-v1.sql'] as $migration) {
+foreach (['mysql-schema.sql', 'mysql-prospecting-v1.sql', 'mysql-prospecting-execution-v1.sql', 'mysql-prospecting-website-research-v1.sql', 'mysql-prospecting-website-research-requests-v1.sql', 'mysql-prospecting-qualification-provenance-v1.sql'] as $migration) {
     $pdo->exec((string) file_get_contents('/app/database/' . $migration));
 }
 

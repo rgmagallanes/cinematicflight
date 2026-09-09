@@ -404,10 +404,11 @@ function prospecting_score(array $body,int $threshold):array
     foreach(['experience_gap_score','walkthrough_fit_score','commercial_fit_score','visual_property_score','contactability_score'] as $field)$scores[$field]=prospecting_integer($body,$field,0,100);
     $weightedRaw=($scores['experience_gap_score']*30+$scores['walkthrough_fit_score']*25+$scores['commercial_fit_score']*20+$scores['visual_property_score']*15+$scores['contactability_score']*10)/100;
     $penalty=0;
-    if(prospecting_bool($body,'existing_strong_interactive_walkthrough'))$penalty-=20;
-    if(prospecting_bool($body,'weak_physical_space_relevance'))$penalty-=30;
-    if(prospecting_bool($body,'no_official_website'))$penalty-=10;
-    $duplicate=prospecting_bool($body,'duplicate');
+    $identifiers=$body['penalty_identifiers']??[];if(!is_array($identifiers)||!array_is_list($identifiers)||count($identifiers)>4)throw new ProspectingError('penalty_identifiers must be a short list.',422);$identifiers=array_values(array_unique($identifiers));foreach($identifiers as $identifier)if(!is_string($identifier)||!in_array($identifier,['STRONG_EXISTING_WALKTHROUGH','WEAK_PHYSICAL_SPACE_RELEVANCE','NO_OFFICIAL_WEBSITE','DUPLICATE'],true))throw new ProspectingError('Invalid penalty identifier.',422);
+    if(in_array('STRONG_EXISTING_WALKTHROUGH',$identifiers,true))$penalty-=20;
+    if(in_array('WEAK_PHYSICAL_SPACE_RELEVANCE',$identifiers,true))$penalty-=30;
+    if(in_array('NO_OFFICIAL_WEBSITE',$identifiers,true))$penalty-=10;
+    $duplicate=in_array('DUPLICATE',$identifiers,true);
     $evidenceSufficient=prospecting_bool($body,'evidence_sufficient',true);
     $final=max(0,min(100,(int)round($weightedRaw+$penalty)));
     $priority=$final>=90?'HOT':($final>=75?'HIGH':($final>=60?'MEDIUM':'LOW'));
@@ -417,7 +418,7 @@ function prospecting_score(array $body,int $threshold):array
 
 function prospecting_create_qualification(PDO $pdo,int $ownerId,string $prospectPublicId,array $body):array
 {
-    prospecting_reject_unknown($body,['experience_gap_score','walkthrough_fit_score','commercial_fit_score','visual_property_score','contactability_score','existing_strong_interactive_walkthrough','weak_physical_space_relevance','no_official_website','duplicate','evidence_sufficient','confidence','experience_gap_summary','primary_marketing_problem','cinematicflight_opportunity','final_score','priority','qualification_status']);
+    prospecting_reject_unknown($body,['experience_gap_score','walkthrough_fit_score','commercial_fit_score','visual_property_score','contactability_score','penalty_identifiers','evidence_sufficient','confidence','experience_gap_summary','primary_marketing_problem','cinematicflight_opportunity','provenance','final_score','priority','qualification_status']);
     $pdo->beginTransaction();
     try {
         $prospect=prospecting_find($pdo,'prospecting_prospects',$ownerId,$prospectPublicId,true);
@@ -431,6 +432,8 @@ function prospecting_create_qualification(PDO $pdo,int $ownerId,string $prospect
         $publicId=prospecting_public_id('qualification');
         $statement=$pdo->prepare('insert into prospecting_qualifications(public_id,owner_id,prospect_id,version,experience_gap_score,walkthrough_fit_score,commercial_fit_score,visual_property_score,contactability_score,penalty_score,final_score,priority,qualification_status,confidence,experience_gap_summary,primary_marketing_problem,cinematicflight_opportunity,scoring_rule_version) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
         $statement->execute([$publicId,$ownerId,$prospect['id'],$version,$score['experience_gap_score'],$score['walkthrough_fit_score'],$score['commercial_fit_score'],$score['visual_property_score'],$score['contactability_score'],$score['penalty_score'],$score['final_score'],$score['priority'],$score['qualification_status'],prospecting_confidence($body),prospecting_text($body,'experience_gap_summary',10000),prospecting_text($body,'primary_marketing_problem',10000),prospecting_text($body,'cinematicflight_opportunity',10000),PROSPECTING_SCORING_RULE_VERSION]);
+        $qualificationId=(int)$pdo->lastInsertId();
+        $provenance=$body['provenance']??null;if(!is_array($provenance)||!array_is_list($provenance)||count($provenance)<1||count($provenance)>30)throw new ProspectingError('provenance must contain between 1 and 30 entries.',422);$insertProvenance=$pdo->prepare('insert into prospecting_qualification_provenance(public_id,owner_id,qualification_id,prospect_id,evidence_id,provenance_type,assessment_component,manual_assessment_reason) values(?,?,?,?,?,?,?,?)');foreach($provenance as $item){if(!is_array($item)||array_is_list($item))throw new ProspectingError('Each provenance entry must be an object.',422);prospecting_reject_unknown($item,['type','evidence_public_id','component','manual_assessment_reason']);$type=prospecting_enum($item,'type',['EVIDENCE','MANUAL_ASSESSMENT']);$component=prospecting_enum($item,'component',['EXPERIENCE_GAP','WALKTHROUGH_FIT','COMMERCIAL_FIT','VISUAL_PROPERTY','CONTACTABILITY','PENALTY','NARRATIVE'],false);$evidenceId=null;$reason=prospecting_text($item,'manual_assessment_reason',1000,false);if($type==='EVIDENCE'){$evidencePublic=prospecting_text($item,'evidence_public_id',80);$evidenceQuery=$pdo->prepare('select id from prospecting_evidence where owner_id=? and prospect_id=? and public_id=?');$evidenceQuery->execute([$ownerId,$prospect['id'],$evidencePublic]);$evidenceId=$evidenceQuery->fetchColumn();if(!$evidenceId||$reason!==null)throw new ProspectingError('Evidence provenance must reference this prospect’s evidence only.',422);}else{if($reason===null||array_key_exists('evidence_public_id',$item))throw new ProspectingError('Manual assessment provenance requires a reason and no evidence.',422);}$insertProvenance->execute([prospecting_public_id('qualification-provenance'),$ownerId,$qualificationId,$prospect['id'],$evidenceId,$type,$component,$reason]);}
         $update=$pdo->prepare('update prospecting_prospects set status=? where owner_id=? and id=?');$update->execute([$score['qualification_status'],$ownerId,$prospect['id']]);
         $pdo->commit();
         return ['public_id'=>$publicId,'version'=>$version]+$score+['confidence'=>(float)$body['confidence'],'experience_gap_summary'=>$body['experience_gap_summary'],'primary_marketing_problem'=>$body['primary_marketing_problem'],'cinematicflight_opportunity'=>$body['cinematicflight_opportunity'],'scoring_rule_version'=>PROSPECTING_SCORING_RULE_VERSION];
@@ -440,9 +443,10 @@ function prospecting_create_qualification(PDO $pdo,int $ownerId,string $prospect
 function prospecting_list_qualifications(PDO $pdo,int $ownerId,string $prospectPublicId):array
 {
     $prospect=prospecting_find($pdo,'prospecting_prospects',$ownerId,$prospectPublicId);
-    $query=$pdo->prepare('select public_id,version,experience_gap_score,walkthrough_fit_score,commercial_fit_score,visual_property_score,contactability_score,penalty_score,final_score,priority,qualification_status,confidence,experience_gap_summary,primary_marketing_problem,cinematicflight_opportunity,scoring_rule_version,created_at from prospecting_qualifications where owner_id=? and prospect_id=? order by version desc');
+    $query=$pdo->prepare('select id,public_id,version,experience_gap_score,walkthrough_fit_score,commercial_fit_score,visual_property_score,contactability_score,penalty_score,final_score,priority,qualification_status,confidence,experience_gap_summary,primary_marketing_problem,cinematicflight_opportunity,scoring_rule_version,created_at from prospecting_qualifications where owner_id=? and prospect_id=? order by version desc');
     $query->execute([$ownerId,$prospect['id']]);$rows=$query->fetchAll();
-    foreach($rows as &$row){foreach(['version','experience_gap_score','walkthrough_fit_score','commercial_fit_score','visual_property_score','contactability_score','penalty_score','final_score'] as $field)$row[$field]=(int)$row[$field];$row['confidence']=(float)$row['confidence'];}unset($row);
+    $provenanceQuery=$pdo->prepare('select qp.public_id,qp.provenance_type,qp.assessment_component,qp.manual_assessment_reason,e.public_id evidence_public_id,e.source_url,e.observation_type,e.claim,e.observation,e.captured_at from prospecting_qualification_provenance qp left join prospecting_evidence e on e.id=qp.evidence_id and e.owner_id=qp.owner_id where qp.owner_id=? and qp.qualification_id=? order by qp.id');
+    foreach($rows as &$row){foreach(['version','experience_gap_score','walkthrough_fit_score','commercial_fit_score','visual_property_score','contactability_score','penalty_score','final_score'] as $field)$row[$field]=(int)$row[$field];$row['confidence']=(float)$row['confidence'];$provenanceQuery->execute([$ownerId,$row['id']]);$row['provenance']=$provenanceQuery->fetchAll();unset($row['id']);}unset($row);
     return $rows;
 }
 

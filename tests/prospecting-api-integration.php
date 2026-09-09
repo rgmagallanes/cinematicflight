@@ -5,14 +5,16 @@ declare(strict_types=1);
 $pdo=new PDO('mysql:host=db;dbname=review_test;charset=utf8mb4','root','fictional-local-test-only',[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
 $migration=file_get_contents('/app/database/mysql-prospecting-v1.sql');
 $pdo->exec($migration);$pdo->exec($migration); // Additive and idempotent.
+$phase8Migration=file_get_contents('/app/database/mysql-prospecting-qualification-provenance-v1.sql');
+$pdo->exec($phase8Migration);$pdo->exec($phase8Migration); // Additive and idempotent.
 
 $checks=0;
 function pcheck(bool $ok,string $label):void{global $checks;if(!$ok)throw new RuntimeException('FAIL: '.$label);$checks++;echo "PASS: {$label}\n";}
 
 $tables=$pdo->query("select table_name from information_schema.tables where table_schema='review_test' and table_name like 'prospecting_%'")->fetchAll(PDO::FETCH_COLUMN);
-pcheck(count($tables)===12,'migration creates all twelve prospecting tables');
+pcheck(count($tables)===13,'migration creates all thirteen prospecting tables');
 $engine=$pdo->query("select count(*) from information_schema.tables where table_schema='review_test' and table_name like 'prospecting_%' and engine='InnoDB' and table_collation='utf8mb4_unicode_ci'")->fetchColumn();
-pcheck((int)$engine===12,'all prospecting tables use repository engine and collation');
+pcheck((int)$engine===13,'all prospecting tables use repository engine and collation');
 $unique=$pdo->query("select count(distinct index_name) from information_schema.statistics where table_schema='review_test' and index_name in ('prospecting_mission_prospect_unique','prospecting_cost_events_owner_idempotency_unique','prospecting_promotions_prospect_unique') and non_unique=0")->fetchColumn();
 pcheck((int)$unique===3,'membership cost and promotion idempotency constraints exist');
 
@@ -76,13 +78,23 @@ $storedContact=pcall('prospecting-contacts&prospect_id='.rawurlencode($prospectI
 pcheck(!isset($storedContact['json']['contact']['guessed_email']),'contact API implements no guessed-email field');
 pcheck(pcall('prospecting-contacts&prospect_id='.rawurlencode($prospectId),'POST',array_replace($contact,['type'=>'GUESSED_EMAIL']),$one)['status']===422,'invalid contact type rejected');
 
-$qualification=['experience_gap_score'=>100,'walkthrough_fit_score'=>100,'commercial_fit_score'=>100,'visual_property_score'=>100,'contactability_score'=>100,'existing_strong_interactive_walkthrough'=>true,'evidence_sufficient'=>true,'confidence'=>0.85,'experience_gap_summary'=>'Static presentation only.','primary_marketing_problem'=>'No guided arrival story.','cinematicflight_opportunity'=>'Create an evidence-supported walkthrough.','final_score'=>1,'priority'=>'LOW','qualification_status'=>'DISQUALIFIED'];
+$qualification=['experience_gap_score'=>100,'walkthrough_fit_score'=>100,'commercial_fit_score'=>100,'visual_property_score'=>100,'contactability_score'=>100,'penalty_identifiers'=>['STRONG_EXISTING_WALKTHROUGH'],'evidence_sufficient'=>true,'confidence'=>0.85,'experience_gap_summary'=>'Static presentation only.','primary_marketing_problem'=>'No guided arrival story.','cinematicflight_opportunity'=>'Create an evidence-supported walkthrough.','provenance'=>[['type'=>'EVIDENCE','evidence_public_id'=>$storedEvidence['json']['evidence']['public_id'],'component'=>'EXPERIENCE_GAP'],['type'=>'MANUAL_ASSESSMENT','component'=>'NARRATIVE','manual_assessment_reason'=>'Owner assessment based on the observed property context.']],'final_score'=>1,'priority'=>'LOW','qualification_status'=>'DISQUALIFIED'];
 $qualified=pcall('prospecting-qualifications&prospect_id='.rawurlencode($prospectId),'POST',$qualification,$one);$snapshot=$qualified['json']['qualification']??[];
 pcheck($qualified['status']===201&&$snapshot['final_score']===80&&$snapshot['priority']==='HIGH'&&$snapshot['qualification_status']==='QUALIFIED','qualification result calculated deterministically');
 pcheck($snapshot['final_score']!==1&&$snapshot['scoring_rule_version']==='cinematicflight-v1','fake submitted final score cannot override stored result');
 pcheck(count(pcall('prospecting-qualifications&prospect_id='.rawurlencode($prospectId),'GET',null,$one)['json']['data'])===1,'versioned qualification snapshot listed');
+$listedQualification=pcall('prospecting-qualifications&prospect_id='.rawurlencode($prospectId),'GET',null,$one)['json']['data'][0];
+pcheck(count($listedQualification['provenance'])===2&&$listedQualification['provenance'][0]['evidence_public_id']===$storedEvidence['json']['evidence']['public_id'],'qualification history returns its immutable evidence and manual provenance');
+pcheck(pcall('prospecting-qualifications&prospect_id='.rawurlencode($prospectId),'POST',array_replace($qualification,['provenance'=>[]]),$one)['status']===409,'qualification cannot append outside researching lifecycle state');
+pcheck(pcall('prospecting-prospects&id='.rawurlencode($prospectId),'PATCH',['status'=>'RESEARCHING'],$one)['status']===200,'qualified prospect can return to researching for a new snapshot');
+$versionTwo=pcall('prospecting-qualifications&prospect_id='.rawurlencode($prospectId),'POST',array_replace($qualification,['experience_gap_score'=>90,'penalty_identifiers'=>[],'provenance'=>[['type'=>'MANUAL_ASSESSMENT','component'=>'EXPERIENCE_GAP','manual_assessment_reason'=>'Owner reassessed the existing recorded evidence.']]]),$one);
+pcheck($versionTwo['status']===201&&$versionTwo['json']['qualification']['version']===2,'requalification appends an immutable second version');
+$versions=pcall('prospecting-qualifications&prospect_id='.rawurlencode($prospectId),'GET',null,$one)['json']['data'];
+pcheck(count($versions)===2&&$versions[0]['version']===2&&$versions[1]['version']===1&&count($versions[1]['provenance'])===2,'qualification version history preserves earlier provenance');
 $invalidScoreId=pcall('prospecting-prospects','POST',['business_name'=>'Score validation villa','category'=>'villa','location'=>'Tagaytay'],$one)['json']['prospect']['public_id'];pcall('prospecting-prospects&id='.rawurlencode($invalidScoreId),'PATCH',['status'=>'RESEARCHING'],$one);
 pcheck(pcall('prospecting-qualifications&prospect_id='.rawurlencode($invalidScoreId),'POST',array_replace($qualification,['experience_gap_score'=>101]),$one)['status']===422,'invalid qualification component rejected');
+pcheck(pcall('prospecting-qualifications&prospect_id='.rawurlencode($invalidScoreId),'POST',array_replace($qualification,['provenance'=>[['type'=>'MANUAL_ASSESSMENT','component'=>'NARRATIVE']]]),$one)['status']===422,'manual qualification provenance requires an explicit reason');
+pcheck(pcall('prospecting-qualifications&prospect_id='.rawurlencode($invalidScoreId),'POST',array_replace($qualification,['provenance'=>[['type'=>'EVIDENCE','evidence_public_id'=>$storedEvidence['json']['evidence']['public_id'],'component'=>'NARRATIVE']]]),$one)['status']===422,'qualification evidence provenance cannot cross prospect scope');
 
 $pending=pcall('prospecting-prospects&id='.rawurlencode($prospectId),'PATCH',['status'=>'PENDING_APPROVAL'],$one);pcheck($pending['status']===200,'qualified prospect moved to pending approval');
 pcheck(pcall('prospecting-prospects&id='.rawurlencode($prospectId),'PATCH',['status'=>'APPROVED'],$one)['status']===409,'generic patch cannot bypass append-only approval');

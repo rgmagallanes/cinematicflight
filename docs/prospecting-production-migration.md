@@ -27,7 +27,9 @@ these steps against production.
    but its foreign-key addition is intentionally not a repeatable deployment action.
 5. Apply `database/mysql-prospecting-website-research-requests-v1.sql` once.
    It adds the owner-controlled Phase 7 request queue; it does not start a worker.
-5. Run the validation queries below before deploying PHP that depends on the
+6. Apply `database/mysql-prospecting-qualification-provenance-v1.sql`. It is
+   additive and may be applied repeatedly; it adds no background work.
+7. Run the validation queries below before deploying PHP that depends on the
    new tables.
 6. Deploy the PHP files with `prospecting_agent_ingest_enabled` still `false`.
    The existing Studio remains compatible because both migrations are additive
@@ -51,6 +53,7 @@ SHOW CREATE TABLE prospecting_budget_reservations;
 SHOW CREATE TABLE prospecting_agent_ingest_requests;
 SHOW CREATE TABLE prospecting_website_research;
 SHOW CREATE TABLE prospecting_website_research_requests;
+SHOW CREATE TABLE prospecting_qualification_provenance;
 
 SELECT COUNT(*) AS orphan_missions
 FROM prospecting_budget_reservations r
@@ -88,6 +91,13 @@ FROM prospecting_budget_reservations
 WHERE estimated_cost_centavos < 0
    OR reserved_cost_centavos < 0
    OR actual_cost_centavos < 0;
+
+SELECT COUNT(*) AS orphaned_qualification_provenance
+FROM prospecting_qualification_provenance qp
+LEFT JOIN prospecting_qualifications q ON q.id = qp.qualification_id AND q.owner_id = qp.owner_id
+LEFT JOIN prospecting_prospects p ON p.id = qp.prospect_id AND p.owner_id = qp.owner_id
+LEFT JOIN prospecting_evidence e ON e.id = qp.evidence_id AND e.owner_id = qp.owner_id AND e.prospect_id = qp.prospect_id
+WHERE q.id IS NULL OR p.id IS NULL OR (qp.evidence_id IS NOT NULL AND e.id IS NULL);
 ```
 
 All orphan, duplicate, and invalid-currency results must be zero. Confirm the
