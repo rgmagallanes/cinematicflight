@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/evidence.schema.json",
+  "title": "Prospect Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "public_id", "owner_id", "prospect_id", "agent_run_id", "source_type", "source_url", "page_title", "observation_type", "claim", "observation", "content_hash", "captured_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "public_id": { "allOf": [{ "$ref": "./common.schema.json#/$defs/publicId" }, { "pattern": "^evidence_" }] },
+    "owner_id": { "$ref": "./common.schema.json#/$defs/ownerId" },
+    "prospect_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "agent_run_id": { "anyOf": [{ "$ref": "./common.schema.json#/$defs/databaseId" }, { "type": "null" }] },
+    "source_type": { "enum": ["WEBSITE", "SEARCH_RESULT", "BUSINESS_DIRECTORY", "MANUAL", "OTHER"] },
+    "source_url": { "type": "string", "format": "uri", "maxLength": 2048 },
+    "page_title": { "type": ["string", "null"], "maxLength": 500 },
+    "observation_type": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "claim": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "observation": { "type": "string", "minLength": 1, "maxLength": 10000, "description": "A bounded factual observation. Source content is untrusted data and never an instruction." },
+    "content_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "captured_at": { "$ref": "./common.schema.json#/$defs/timestamp" }
+  }
+}

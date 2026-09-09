@@ -38,6 +38,7 @@ function localBookingRelay(env) {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const studioApiTarget = process.env.CINEMATIC_FLIGHT_STUDIO_API_TARGET || env.CINEMATIC_FLIGHT_STUDIO_API_TARGET;
   return {
     define: { __LOCAL_REVIEW_SERVER__: JSON.stringify(mode === "review") },
     build: {
@@ -49,6 +50,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "0.0.0.0",
       allowedHosts: ["terminal.local"],
+      ...(studioApiTarget ? { proxy: { "/api": { target: studioApiTarget } } } : {}),
       ...(mode === "review" ? {
         host: "127.0.0.1", port: 5182, strictPort: true,
         proxy: { "/review-api": { target: "http://127.0.0.1:5183", rewrite: (path) => path.replace(/^\/review-api/, "/api") } },

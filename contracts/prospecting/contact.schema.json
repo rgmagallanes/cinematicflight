@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/contact.schema.json",
+  "title": "Public Prospect Contact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "prospect_id", "type", "value", "source_url", "verification_status", "is_primary", "created_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "prospect_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "type": { "enum": ["EMAIL", "PHONE", "CONTACT_FORM", "INSTAGRAM", "FACEBOOK", "OTHER"] },
+    "value": { "type": "string", "minLength": 1, "maxLength": 2048, "description": "Observed public value only. Guessed or inferred email patterns are prohibited." },
+    "source_url": { "type": "string", "format": "uri", "maxLength": 2048 },
+    "verification_status": { "enum": ["VERIFIED", "UNVERIFIED"] },
+    "is_primary": { "type": "boolean" },
+    "created_at": { "$ref": "./common.schema.json#/$defs/timestamp" }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/mission.schema.json",
+  "title": "Prospecting Mission",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "public_id", "owner_id", "name", "objective", "location", "target_categories", "target_qualified_leads", "minimum_score", "mission_budget_centavos", "status", "created_at", "updated_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "public_id": { "allOf": [{ "$ref": "./common.schema.json#/$defs/publicId" }, { "pattern": "^mission_" }] },
+    "owner_id": { "$ref": "./common.schema.json#/$defs/ownerId" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "objective": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "location": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "target_categories": { "type": "array", "minItems": 1, "maxItems": 25, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 120 } },
+    "target_qualified_leads": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "minimum_score": { "$ref": "./common.schema.json#/$defs/score" },
+    "mission_budget_centavos": { "$ref": "./common.schema.json#/$defs/centavos" },
+    "status": { "enum": ["DRAFT", "READY", "RUNNING", "PAUSED", "COMPLETED", "CANCELLED", "FAILED", "BUDGET_EXHAUSTED"] },
+    "created_at": { "$ref": "./common.schema.json#/$defs/timestamp" },
+    "updated_at": { "$ref": "./common.schema.json#/$defs/timestamp" }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/mission-prospect.schema.json",
+  "title": "Mission Prospect Relationship",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mission_id", "prospect_id", "discovery_source", "discovered_at", "mission_status", "rank"],
+  "properties": {
+    "mission_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "prospect_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "discovery_source": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "discovered_at": { "$ref": "./common.schema.json#/$defs/timestamp" },
+    "mission_status": { "enum": ["CANDIDATE", "ACTIVE", "QUALIFIED", "DISQUALIFIED", "REJECTED", "COMPLETED", "DUPLICATE"] },
+    "rank": { "type": ["integer", "null"], "minimum": 1 }
+  }
+}

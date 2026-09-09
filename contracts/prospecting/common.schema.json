@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/common.schema.json",
+  "title": "CinematicFlight Prospecting Common Values",
+  "$defs": {
+    "databaseId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "ownerId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "centavos": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991,
+      "description": "Non-negative PHP centavos. Floating-point currency is invalid."
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "publicId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,31}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "contactStatus": {
+      "enum": ["FOUND", "CONTACT_FORM_ONLY", "SOCIAL_ONLY", "NOT_FOUND", "UNVERIFIED"]
+    }
+  }
+}

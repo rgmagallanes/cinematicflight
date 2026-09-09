@@ -207,7 +207,18 @@ if ($action === 'review-ingest') {
     review_ingest_route($pdo, $config);
 }
 
+if ($action === 'prospecting-agent-ingest') {
+    require_once __DIR__ . '/prospecting.php';
+    require_once __DIR__ . '/prospecting-agent-ingest.php';
+    prospecting_agent_ingest_route($pdo, $config);
+}
+
 $ownerId = require_user();
+
+if (str_starts_with($action, 'prospecting-')) {
+    require_once __DIR__ . '/prospecting.php';
+    prospecting_route($pdo, $ownerId, $action);
+}
 
 if (in_array($action, ['review-drafts', 'review-draft', 'review-import', 'review-change', 'review-attachment'], true)) {
     require_once __DIR__ . '/review-queue.php';

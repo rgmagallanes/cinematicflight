@@ -1,32 +1,29 @@
-name: cinematicflight-review-test
+name: cinematicflight-prospecting-ui-test
 services:
   db:
     image: mariadb:11.4@sha256:611a2fcc5fa7c6ceb8644c6f74b25ede004ff6c3a6b38c8f8c23d3bbf6c26430
     environment:
       MARIADB_ROOT_PASSWORD: fictional-local-test-only
-      MARIADB_DATABASE: review_test
+      MARIADB_DATABASE: prospecting_ui_test
     tmpfs:
       - /var/lib/mysql
-    networks: [test]
     healthcheck:
       test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
       interval: 2s
       timeout: 5s
       retries: 30
-  tests:
+  api:
     build: .
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      CINEMATIC_FLIGHT_CONFIG_PATH: /app/config.php
+    ports:
+      - 127.0.0.1:8104:8080
     volumes:
       - ../../public:/app/public:ro
       - ../../database:/app/database:ro
-      - ../../tests:/app/tests:ro
-      - ../review-local:/app/review-local:ro
-    tmpfs:
-      - /run/review-private
-    networks: [test]
-    command: [sh, -c, 'php tests/review-api-integration.php && php tests/review-ingestion-integration.php && php tests/prospecting-api-integration.php && php tests/prospecting-execution-integration.php']
-networks:
-  test:
-    internal: true
+      - ./config.php:/app/config.php:ro
+      - ./seed.php:/app/seed.php:ro
+    command: [sh, -c, 'php /app/seed.php && php -S 0.0.0.0:8080 -t /app/public']

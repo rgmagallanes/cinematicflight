@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/qualification.schema.json",
+  "title": "Versioned Prospect Qualification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "public_id", "prospect_id", "version", "experience_gap_score", "walkthrough_fit_score", "commercial_fit_score", "visual_property_score", "contactability_score", "penalty_score", "final_score", "priority", "qualification_status", "confidence", "experience_gap_summary", "primary_marketing_problem", "cinematicflight_opportunity", "scoring_rule_version", "created_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "public_id": { "allOf": [{ "$ref": "./common.schema.json#/$defs/publicId" }, { "pattern": "^qualification_" }] },
+    "prospect_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "version": { "type": "integer", "minimum": 1 },
+    "experience_gap_score": { "$ref": "./common.schema.json#/$defs/score" },
+    "walkthrough_fit_score": { "$ref": "./common.schema.json#/$defs/score" },
+    "commercial_fit_score": { "$ref": "./common.schema.json#/$defs/score" },
+    "visual_property_score": { "$ref": "./common.schema.json#/$defs/score" },
+    "contactability_score": { "$ref": "./common.schema.json#/$defs/score" },
+    "penalty_score": { "type": "integer", "minimum": -60, "maximum": 0 },
+    "final_score": { "$ref": "./common.schema.json#/$defs/score" },
+    "priority": { "enum": ["HOT", "HIGH", "MEDIUM", "LOW"] },
+    "qualification_status": { "enum": ["QUALIFIED", "DISQUALIFIED", "INSUFFICIENT_EVIDENCE"] },
+    "confidence": { "$ref": "./common.schema.json#/$defs/confidence" },
+    "experience_gap_summary": { "type": "string", "minLength": 1, "maxLength": 5000 },
+    "primary_marketing_problem": { "type": "string", "minLength": 1, "maxLength": 5000 },
+    "cinematicflight_opportunity": { "type": "string", "minLength": 1, "maxLength": 5000 },
+    "scoring_rule_version": { "type": "string", "const": "cinematicflight-v1" },
+    "created_at": { "$ref": "./common.schema.json#/$defs/timestamp" }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cinematicflight.com/contracts/prospecting/cost-event.schema.json",
+  "title": "Prospecting Cost Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "mission_id", "prospect_id", "agent_run_id", "provider", "operation", "estimated_cost_centavos", "actual_cost_centavos", "idempotency_key", "created_at"],
+  "properties": {
+    "id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "mission_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "prospect_id": { "anyOf": [{ "$ref": "./common.schema.json#/$defs/databaseId" }, { "type": "null" }] },
+    "agent_run_id": { "$ref": "./common.schema.json#/$defs/databaseId" },
+    "provider": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "operation": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "estimated_cost_centavos": { "$ref": "./common.schema.json#/$defs/centavos" },
+    "actual_cost_centavos": { "anyOf": [{ "$ref": "./common.schema.json#/$defs/centavos" }, { "type": "null" }] },
+    "idempotency_key": { "type": "string", "minLength": 16, "maxLength": 255, "pattern": "^[A-Za-z0-9:_-]+$" },
+    "created_at": { "$ref": "./common.schema.json#/$defs/timestamp" }
+  }
+}

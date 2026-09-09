@@ -58,7 +58,7 @@ test('server review route and fixture initialization remain isolated', () => {
   const ui=readFileSync('src/ServerReviewInbox.jsx','utf8');
   assert.doesNotMatch(ui,/localStorage|indexedDB|importDraft|\.send\(/);
   const dashboard=readFileSync('src/SalesDashboard.jsx','utf8');
-  assert.match(dashboard,/cloudUser \? \[\.\.\.navItems, reviewNavItem\] : navItems/);
+  assert.match(dashboard,/cloudUser \? \[\.\.\.navItems, prospectingNavItem, reviewNavItem\] : navItems/);
   assert.match(dashboard,/window\.location\.pathname === '\/review-inbox'/);
   assert.match(dashboard,/You have unsaved review work\. Discard it and leave the Review Inbox\?/);
   assert.match(dashboard,/clearOwnerReviewWork\(reviewWorkStore, cloudUser\?\.id\)/);

@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowSquareOut,
+  Binoculars,
   CalendarBlank,
   CaretDown,
   CaretRight,
@@ -43,6 +44,7 @@ import {
 } from "@phosphor-icons/react";
 
 const StudioReviewInbox = lazy(() => import('./StudioReviewInbox.jsx'));
+const ProspectingWorkspace = lazy(() => import('./prospecting/ProspectingWorkspace.jsx'));
 
 const initialInquiries = [
   { id: 1, property: "Riverstone Lodge", contact: "Amelia Hart", email: "amelia@example.com", stage: "Proposal", activity: "Aug 25", next: "Follow up on proposal", actionStatus: "Due today", due: "9:30 AM", detail: "Proposal sent Aug 25" },
@@ -93,6 +95,7 @@ const navItems = [
   { id: "documents", label: "Property Files", icon: FolderOpen },
 ];
 const reviewNavItem = { id: "review", label: "Review Inbox", icon: EnvelopeSimpleOpen };
+const prospectingNavItem = { id: "prospecting", label: "Prospecting", icon: Binoculars };
 
 const metrics = [
   { label: "New enquiries", value: "12", note: "vs 7-day avg 8" },
@@ -813,6 +816,7 @@ function AddInquiryDialog({ onAdd, onClose }) {
 export function SalesDashboard({ cloudUser = null, onSignOut = null, onSessionExpired = null, reviewWorkStore = null }) {
   const [activeView, setActiveView] = useState(() => {
     if (cloudUser && window.location.pathname === '/review-inbox') return 'review';
+    if (cloudUser && window.location.pathname.startsWith('/prospecting')) return 'prospecting';
     if (!cloudUser) {
       const requestedView = new URLSearchParams(window.location.search).get('view');
       if (navItems.some((item) => item.id === requestedView)) return requestedView;
@@ -828,7 +832,8 @@ export function SalesDashboard({ cloudUser = null, onSignOut = null, onSessionEx
   const [cloudMessage, setCloudMessage] = useState("");
   const [reviewDirty, setReviewDirty] = useState(false);
   const [reviewBusy, setReviewBusy] = useState(false);
-  const workspaceNavItems = useMemo(() => cloudUser ? [...navItems, reviewNavItem] : navItems, [cloudUser]);
+  const [studioPath, setStudioPath] = useState(window.location.pathname);
+  const workspaceNavItems = useMemo(() => cloudUser ? [...navItems, prospectingNavItem, reviewNavItem] : navItems, [cloudUser]);
   const title = useMemo(() => workspaceNavItems.find((item) => item.id === activeView)?.label, [activeView, workspaceNavItems]);
   const discardReviewWork = () => {
     clearOwnerReviewWork(reviewWorkStore, cloudUser?.id);
@@ -840,7 +845,13 @@ export function SalesDashboard({ cloudUser = null, onSignOut = null, onSessionEx
     if (view !== 'review' && activeView === 'review') discardReviewWork();
     setActiveView(view);
     if (!cloudUser) return;
-    const path = view === 'review' ? '/review-inbox' : '/';
+    const path = view === 'review' ? '/review-inbox' : view === 'prospecting' ? '/prospecting' : '/';
+    setStudioPath(path);
+    if (window.location.pathname !== path) window.history.pushState({}, '', path);
+  };
+  const navigateProspecting = (path) => {
+    setActiveView('prospecting');
+    setStudioPath(path);
     if (window.location.pathname !== path) window.history.pushState({}, '', path);
   };
 
@@ -851,7 +862,8 @@ export function SalesDashboard({ cloudUser = null, onSignOut = null, onSessionEx
   useEffect(() => {
     if (!cloudUser) return undefined;
     const syncRoute = () => {
-      const nextView = window.location.pathname === '/review-inbox' ? 'review' : 'home';
+      const nextPath = window.location.pathname;
+      const nextView = nextPath === '/review-inbox' ? 'review' : nextPath.startsWith('/prospecting') ? 'prospecting' : 'home';
       if (nextView !== 'review' && activeView === 'review' && reviewBusy) {
         window.history.pushState({}, '', '/review-inbox');
         setCloudMessage('Wait for the review decision to finish saving.');
@@ -862,6 +874,7 @@ export function SalesDashboard({ cloudUser = null, onSignOut = null, onSessionEx
         return;
       }
       if (nextView !== 'review' && activeView === 'review') discardReviewWork();
+      setStudioPath(nextPath);
       setActiveView(nextView);
     };
     window.addEventListener('popstate', syncRoute);
@@ -910,12 +923,13 @@ export function SalesDashboard({ cloudUser = null, onSignOut = null, onSessionEx
         discardReviewWork();
         onSignOut?.();
       }} items={workspaceNavItems} />
-      <main className={`dashboard-main ${activeView === "documents" ? "is-property-files" : ""} ${activeView === 'review' ? 'is-review-inbox' : ''}`}>
+      <main className={`dashboard-main ${activeView === "documents" ? "is-property-files" : ""} ${activeView === 'review' ? 'is-review-inbox' : ''} ${activeView === 'prospecting' ? 'is-prospecting' : ''}`}>
         {activeView === "home" && <HomeView {...common} setActiveView={navigateView} />}
         {activeView === "enquiries" && <EnquiriesView {...common} />}
         {activeView === "pipeline" && <PipelineView {...common} />}
         {activeView === "calendar" && <CalendarView {...common} />}
         {activeView === "documents" && <PropertyFilesView {...common} setActiveView={setActiveView} cloudUser={cloudUser} />}
+        {activeView === 'prospecting' && cloudUser && <Suspense fallback={<div className="studio-review-loading" role="status">Opening private Prospecting workspace…</div>}><ProspectingWorkspace routePath={studioPath} onNavigate={navigateProspecting} onSessionExpired={onSessionExpired} /></Suspense>}
         {activeView === 'review' && cloudUser && <Suspense fallback={<div className="studio-review-loading" role="status">Opening private review inbox…</div>}><StudioReviewInbox onSessionExpired={onSessionExpired} workStore={reviewWorkStore} onDirtyChange={setReviewDirty} onBusyChange={setReviewBusy} /></Suspense>}
       </main>
       {selectedInquiry && <InquiryDialog key={selectedInquiry.id} inquiry={selectedInquiry} cloudUser={cloudUser} onClose={() => setSelectedInquiry(null)} onUpdate={updateInquiry} />}
