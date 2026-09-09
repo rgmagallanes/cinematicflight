@@ -25,6 +25,8 @@ these steps against production.
 3. Apply `database/mysql-prospecting-execution-v1.sql`.
 4. Apply `database/mysql-prospecting-website-research-v1.sql` once. It is additive,
    but its foreign-key addition is intentionally not a repeatable deployment action.
+5. Apply `database/mysql-prospecting-website-research-requests-v1.sql` once.
+   It adds the owner-controlled Phase 7 request queue; it does not start a worker.
 5. Run the validation queries below before deploying PHP that depends on the
    new tables.
 6. Deploy the PHP files with `prospecting_agent_ingest_enabled` still `false`.
@@ -48,6 +50,7 @@ SHOW TABLES LIKE 'prospecting_%';
 SHOW CREATE TABLE prospecting_budget_reservations;
 SHOW CREATE TABLE prospecting_agent_ingest_requests;
 SHOW CREATE TABLE prospecting_website_research;
+SHOW CREATE TABLE prospecting_website_research_requests;
 
 SELECT COUNT(*) AS orphan_missions
 FROM prospecting_budget_reservations r
@@ -57,6 +60,12 @@ WHERE m.id IS NULL;
 SELECT owner_id, idempotency_key, COUNT(*) AS duplicate_count
 FROM prospecting_budget_reservations
 GROUP BY owner_id, idempotency_key
+HAVING COUNT(*) > 1;
+
+SELECT owner_id, mission_id, prospect_id, COUNT(*) AS active_request_count
+FROM prospecting_website_research_requests
+WHERE status IN ('PENDING','CLAIMED')
+GROUP BY owner_id, mission_id, prospect_id
 HAVING COUNT(*) > 1;
 
 SELECT owner_id, request_id, COUNT(*) AS duplicate_count

@@ -38,6 +38,7 @@ than path rewriting. Prospecting follows that convention:
 | `prospecting-artifacts` | `GET` | `prospect_id` and optional `version` |
 | `prospecting-reservations` | `GET` | `mission_id`, `prospect_id`, or `id` |
 | `prospecting-website-research` | `GET` | `prospect_id` or `id` |
+| `prospecting-website-research-requests` | `GET`, `POST`, `PATCH` | `prospect_id`, `mission_id`, or `id` |
 
 All identifiers are public IDs. Every lookup also includes the authenticated
 Studio owner ID, so another owner's valid public ID receives the same `404` as a
@@ -85,6 +86,11 @@ The Studio owner API can read runs, decisions, artifacts, and reservation/cost
 information. It cannot perform the internal mutations. Artifacts are restricted
 to versioned `WALKTHROUGH_CONCEPT` and `OUTREACH_DRAFT` records and are always
 reported as `INTERNAL_UNSENT`.
+
+Website-research requests are owner-controlled queue records, not browser crawl
+commands. Studio can create, inspect, or cancel a pending request. Only the
+signed internal boundary can claim it and bind its run; result persistence then
+updates the claimed request in the same transaction as the research record.
 
 Reservation authorization locks the owner row and then the mission row in one
 transaction. The owner lock serializes monthly authorizations across missions;

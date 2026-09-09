@@ -568,6 +568,36 @@ function prospecting_read_website_research(PDO $pdo,int $ownerId):array
     foreach($rows as &$row){$row['mission_id']=$row['mission_public_id'];$row['prospect_id']=$row['prospect_public_id'];$row['agent_run_id']=$row['run_public_id'];unset($row['mission_public_id'],$row['prospect_public_id'],$row['run_public_id']);foreach(['pages_attempted','pages_succeeded'] as $field)$row[$field]=(int)$row[$field];}unset($row);return $rows;
 }
 
+function prospecting_request_row(array $row):array
+{
+    return ['public_id'=>$row['public_id'],'mission_id'=>$row['mission_public_id'],'prospect_id'=>$row['prospect_public_id'],'requested_url'=>$row['requested_url'],'normalized_domain'=>$row['normalized_domain'],'status'=>$row['status'],'agent_run_id'=>$row['run_public_id'],'website_research_id'=>$row['research_public_id'],'owner_note'=>$row['owner_note'],'requested_at'=>$row['requested_at'],'claimed_at'=>$row['claimed_at'],'completed_at'=>$row['completed_at'],'cancelled_at'=>$row['cancelled_at'],'created_at'=>$row['created_at'],'updated_at'=>$row['updated_at']];
+}
+
+function prospecting_read_website_research_requests(PDO $pdo,int $ownerId):array
+{
+    $params=[$ownerId];$where='r.owner_id=?';
+    if(isset($_GET['id'])){$where.=' and r.public_id=?';$params[]=prospecting_query_public_id('id','website-research-request');}
+    if(isset($_GET['prospect_id'])){$prospect=prospecting_find($pdo,'prospecting_prospects',$ownerId,prospecting_query_public_id('prospect_id','prospect'));$where.=' and r.prospect_id=?';$params[]=$prospect['id'];}
+    if(isset($_GET['mission_id'])){$mission=prospecting_find($pdo,'prospecting_missions',$ownerId,prospecting_query_public_id('mission_id','mission'));$where.=' and r.mission_id=?';$params[]=$mission['id'];}
+    $sql="select r.*,m.public_id mission_public_id,p.public_id prospect_public_id,ar.public_id run_public_id,wr.public_id research_public_id from prospecting_website_research_requests r join prospecting_missions m on m.id=r.mission_id and m.owner_id=r.owner_id join prospecting_prospects p on p.id=r.prospect_id and p.owner_id=r.owner_id left join prospecting_agent_runs ar on ar.id=r.agent_run_id left join prospecting_website_research wr on wr.id=r.website_research_id where {$where} order by r.id desc";$query=$pdo->prepare($sql);$query->execute($params);return array_map('prospecting_request_row',$query->fetchAll());
+}
+
+function prospecting_create_website_research_request(PDO $pdo,int $ownerId,array $body):array
+{
+    prospecting_reject_unknown($body,['mission_public_id','prospect_public_id','idempotency_key','owner_note']);$missionId=prospecting_text($body,'mission_public_id',80);$prospectId=prospecting_text($body,'prospect_public_id',80);$key=prospecting_text($body,'idempotency_key',190);$note=prospecting_text($body,'owner_note',500,false);$mission=prospecting_find($pdo,'prospecting_missions',$ownerId,$missionId,true);$prospect=prospecting_find($pdo,'prospecting_prospects',$ownerId,$prospectId,true);
+    if($mission['status']!=='RUNNING'||$prospect['status']!=='RESEARCHING')throw new ProspectingError('Research requests require a running mission and researching prospect.',409);
+    if(!$prospect['website']||!$prospect['normalized_domain']||!str_starts_with(strtolower($prospect['website']),'https://'))throw new ProspectingError('Research requests require the prospect\'s recorded official HTTPS website.',422);
+    $member=$pdo->prepare('select 1 from prospecting_mission_prospects where mission_id=? and prospect_id=?');$member->execute([$mission['id'],$prospect['id']]);if(!$member->fetchColumn())throw new ProspectingError('The prospect must belong to this mission.',422);
+    $payload=['mission_public_id'=>$missionId,'prospect_public_id'=>$prospectId,'owner_note'=>$note];$hash=hash('sha256',prospecting_json(prospecting_canonicalize($payload)));$existing=$pdo->prepare('select *,? mission_public_id,? prospect_public_id,null run_public_id,null research_public_id from prospecting_website_research_requests where owner_id=? and idempotency_key=?');$existing->execute([$missionId,$prospectId,$ownerId,$key]);$row=$existing->fetch();if($row){if(!hash_equals($row['request_hash'],$hash))throw new ProspectingError('Research request idempotency key conflicts with a different request.',409);return prospecting_request_row($row);}
+    $active=$pdo->prepare("select 1 from prospecting_website_research_requests where owner_id=? and mission_id=? and prospect_id=? and status in ('PENDING','CLAIMED') limit 1");$active->execute([$ownerId,$mission['id'],$prospect['id']]);if($active->fetchColumn())throw new ProspectingError('An active website research request already exists for this prospect and mission.',409);
+    $public=prospecting_public_id('website-research-request');$insert=$pdo->prepare("insert into prospecting_website_research_requests(public_id,owner_id,mission_id,prospect_id,requested_url,normalized_domain,status,idempotency_key,request_hash,owner_note) values(?,?,?,?,?,?, 'PENDING',?,?,?)");$insert->execute([$public,$ownerId,$mission['id'],$prospect['id'],$prospect['website'],$prospect['normalized_domain'],$key,$hash,$note]);$_GET['id']=$public;return prospecting_read_website_research_requests($pdo,$ownerId)[0];
+}
+
+function prospecting_cancel_website_research_request(PDO $pdo,int $ownerId,string $publicId,array $body):array
+{
+    prospecting_reject_unknown($body,['status']);if(prospecting_enum($body,'status',['CANCELLED'])!=='CANCELLED')throw new ProspectingError('Only pending requests can be cancelled.',422);$query=$pdo->prepare('select * from prospecting_website_research_requests where owner_id=? and public_id=? for update');$query->execute([$ownerId,$publicId]);$row=$query->fetch();if(!$row)throw new ProspectingError('The requested resource could not be found.',404);if($row['status']!=='PENDING')throw new ProspectingError('Only pending research requests can be cancelled.',409);$pdo->prepare("update prospecting_website_research_requests set status='CANCELLED',cancelled_at=utc_timestamp() where id=?")->execute([$row['id']]);$_GET['id']=$publicId;return prospecting_read_website_research_requests($pdo,$ownerId)[0];
+}
+
 function prospecting_route(PDO $pdo,int $ownerId,string $action):void
 {
     $method=$_SERVER['REQUEST_METHOD'];
@@ -611,6 +641,11 @@ function prospecting_route(PDO $pdo,int $ownerId,string $action):void
         if($action==='prospecting-artifacts'&&$method==='GET')respond(['data'=>prospecting_read_artifacts($pdo,$ownerId,prospecting_query_public_id('prospect_id','prospect')),'csrfToken'=>csrf_token()]);
         if($action==='prospecting-reservations'&&$method==='GET')respond(['data'=>prospecting_read_reservations($pdo,$ownerId),'csrfToken'=>csrf_token()]);
         if($action==='prospecting-website-research'&&$method==='GET')respond(['data'=>prospecting_read_website_research($pdo,$ownerId),'csrfToken'=>csrf_token()]);
+        if($action==='prospecting-website-research-requests'){
+            if($method==='GET')respond(['data'=>prospecting_read_website_research_requests($pdo,$ownerId),'csrfToken'=>csrf_token()]);
+            if($method==='POST')respond(['request'=>prospecting_create_website_research_request($pdo,$ownerId,$body)],201);
+            if($method==='PATCH')respond(['request'=>prospecting_cancel_website_research_request($pdo,$ownerId,prospecting_query_public_id('id','website-research-request'),$body)]);
+        }
         respond(['error'=>'Method not allowed.'],405);
     } catch(ProspectingError $error){respond(['error'=>$error->getMessage()],$error->getCode());}
     catch(Throwable $error){error_log('Studio prospecting API failed: '.get_class($error));respond(['error'=>'Prospecting storage is temporarily unavailable. No fallback was used.'],503);}

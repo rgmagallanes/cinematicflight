@@ -16,6 +16,8 @@ export interface ManualWebsiteResearchRunInput {
   prospectPublicId: string;
   requestedUrl: string;
   idempotencyKey: string;
+  runPublicId?: string;
+  requestPublicId?: string;
 }
 
 export interface ManualWebsiteResearchRunResult {
@@ -31,12 +33,10 @@ export interface ManualWebsiteResearchRunResult {
  * replay, so a potentially completed run is never overwritten as failed.
  */
 export async function runManualWebsiteResearch(input: ManualWebsiteResearchRunInput): Promise<ManualWebsiteResearchRunResult> {
-  const created = await input.ingest("CREATE_RUN", {
-    mission_public_id: input.missionPublicId,
-    prospect_public_id: input.prospectPublicId,
-    status: "RUNNING",
+  const created = input.runPublicId ? null : await input.ingest("CREATE_RUN", {
+    mission_public_id: input.missionPublicId, prospect_public_id: input.prospectPublicId, status: "RUNNING",
   });
-  const runPublicId = String(created.run?.public_id ?? "");
+  const runPublicId = input.runPublicId ?? String(created?.run?.public_id ?? "");
   if (!runPublicId) throw new Error("Internal ingest did not return an agent run public ID.");
 
   const research = await researchWebsite({ requestedUrl: input.requestedUrl, transport: input.transport });
@@ -44,6 +44,7 @@ export async function runManualWebsiteResearch(input: ManualWebsiteResearchRunIn
     mission_public_id: input.missionPublicId,
     prospect_public_id: input.prospectPublicId,
     run_public_id: runPublicId,
+    ...(input.requestPublicId ? { request_public_id: input.requestPublicId } : {}),
     idempotency_key: input.idempotencyKey,
     requested_url: research.requested_url,
     canonical_host: research.canonical_host,

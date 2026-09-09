@@ -40,6 +40,9 @@ export const prospectingApi = {
   listDecisions: async (runId) => data(await apiGet('prospecting-decisions', { run_id: runId })),
   listReservations: async (params = {}) => data(await apiGet('prospecting-reservations', params)),
   getMissionCosts: async (missionId) => record(await apiGet('prospecting-costs', { mission_id: missionId }), 'summary'),
+  listWebsiteResearchRequests: async (params = {}) => data(await apiGet('prospecting-website-research-requests', params)),
+  createWebsiteResearchRequest: async (payload) => record(await apiPost('prospecting-website-research-requests', payload), 'request'),
+  cancelWebsiteResearchRequest: async (id) => record(await apiPatch('prospecting-website-research-requests', { status: 'CANCELLED' }, { id }), 'request'),
 };
 
 export function parsePhpToCentavos(value) {

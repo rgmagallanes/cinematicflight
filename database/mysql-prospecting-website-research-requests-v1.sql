@@ -1,0 +1,35 @@
+-- Additive Phase 7 migration. Apply after mysql-prospecting-website-research-v1.sql.
+-- A request is an owner-controlled queue record; it never fetches a website.
+
+create table if not exists prospecting_website_research_requests (
+  id bigint unsigned not null auto_increment,
+  public_id varchar(80) character set ascii collate ascii_bin not null,
+  owner_id bigint unsigned not null,
+  mission_id bigint unsigned not null,
+  prospect_id bigint unsigned not null,
+  requested_url varchar(2048) not null,
+  normalized_domain varchar(253) character set ascii collate ascii_bin not null,
+  status varchar(40) not null,
+  idempotency_key varchar(190) character set ascii collate ascii_bin not null,
+  request_hash char(64) character set ascii collate ascii_bin not null,
+  agent_run_id bigint unsigned null,
+  website_research_id bigint unsigned null,
+  owner_note varchar(500) null,
+  requested_at timestamp not null default current_timestamp,
+  claimed_at timestamp null,
+  completed_at timestamp null,
+  cancelled_at timestamp null,
+  created_at timestamp not null default current_timestamp,
+  updated_at timestamp not null default current_timestamp on update current_timestamp,
+  primary key (id),
+  unique key prospecting_website_research_requests_public_unique (public_id),
+  unique key prospecting_website_research_requests_owner_idempotency_unique (owner_id, idempotency_key),
+  active_request_key varchar(650) generated always as (case when status in ('PENDING','CLAIMED') then concat(owner_id, ':', mission_id, ':', prospect_id) else null end) stored,
+  unique key prospecting_website_research_requests_active_unique (active_request_key),
+  key prospecting_website_research_requests_owner_prospect_index (owner_id, prospect_id, id),
+  constraint prospecting_website_research_requests_owner_fk foreign key (owner_id) references studio_users(id) on delete cascade,
+  constraint prospecting_website_research_requests_mission_fk foreign key (mission_id) references prospecting_missions(id) on delete restrict,
+  constraint prospecting_website_research_requests_prospect_fk foreign key (prospect_id) references prospecting_prospects(id) on delete restrict,
+  constraint prospecting_website_research_requests_run_fk foreign key (agent_run_id) references prospecting_agent_runs(id) on delete restrict,
+  constraint prospecting_website_research_requests_research_fk foreign key (website_research_id) references prospecting_website_research(id) on delete restrict
+) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_unicode_ci;
