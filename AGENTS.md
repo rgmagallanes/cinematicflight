@@ -65,6 +65,8 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 
 ## Studio sales workflow decisions
 
+- From a discovered Prospecting record, expose one explicit owner-only **Start research** control. It may perform only the existing `DISCOVERED` → `RESEARCHING` lifecycle transition; it must state that it neither inspects a website, spends budget, contacts anyone, nor sends outreach.
+
 - Use the selected “Editorial Appointment Desk” direction for the private Studio Calendar: enquiry-linked prospect details and conversation choices sit beside the date, time, and booking summary.
 - Use the selected “Calendar-First Invitation” direction for the public prospect booking route at `/book`: a signed-in identity summary, conversation choice, calendar, available Manila-time slots, review, and an explicit server-confirmed receipt. Do not show success until the same-origin booking relay accepts the request. Keep it visually and operationally separate from the owner-only Studio.
 - Require the prospect's name and email before the public booking calendar is available. Keep property or business optional, preserve the entered values when validation fails, and show persistent inline recovery text for missing or invalid required fields.
